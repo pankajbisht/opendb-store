@@ -16,6 +16,7 @@ export default [
         navigator: 'readonly',
         setTimeout: 'readonly',
         Blob: 'readonly',
+        TextEncoder: 'readonly',
 
         describe: 'readonly',
         test: 'readonly',

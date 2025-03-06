@@ -1,14 +1,34 @@
 import db from "../dist/opendb-esm.min.js"
 
-db.local.set('name', 'opendb-store');
-console.log(db.local.get('name'));
+// Set an item for testing:
+db.local.set('myKey', { name: 'Alice', age: 30 });
 
-console.log(db.local.get('missingKey', {})); // {}
+// Get the size of the value for a specific key:
+console.log(db.local.size('myKey')); // e.g., 105 (raw bytes)
+console.log(db.local.size('myKey', { format: 'KB', unit: true })); // e.g., "0.00 MB"
 
-(async() => {
-    db.local.set('expiringKey', 'value', { expire: 500 });
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    const result = db.local.get('expiringKey');
+// Get the remaining free space in localStorage:
+console.log(db.local.free()); // raw bytes
+console.log(db.local.free({ format: 'mb', unit: true })); // e.g., "4.95 MB"
 
-    console.log("The result is:", result);
-})()
+// Get the total capacity:
+console.log(db.local.capacity()); // raw bytes (e.g., 5242880 for 5 MB)
+console.log(db.local.capacity({ format: 'MB', unit: true })); // "5.00 MB"
+
+
+const sizeInBytes = 2 * 1024 * 1024; // 2 MB
+const largeString = "A".repeat(sizeInBytes); // Create a 2MB string
+const largeObject = { data: largeString };
+
+db.local.set('largeObj', largeObject);
+console.log(db.local.size('largeObj')); // e.g., 105 (raw bytes)
+console.log(db.local.size('largeObj', { format: 'mb', unit: true })); // e.g., "0.00 MB"
+
+// Get the remaining free space in localStorage:
+console.log(db.local.free()); // raw bytes
+console.log(db.local.free({ format: 'mb', unit: true })); // e.g., "4.95 MB"
+
+
+console.log(db.local.capacity()); // raw bytes
+console.log(db.local.capacity({ format: 'mb', unit: true })); // e.g., "5.00 MB"
+console.log(db.session.free({ format: 'mb', unit: true })); // e.g., "5.00 MB"

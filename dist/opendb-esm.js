@@ -89,10 +89,43 @@ function isNull(obj) {
   return obj === null || obj === 'null';
 }
 
-var util = {
+function auto(bytes, unit) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + (unit ? sizes[i] : '');
+}
+
+function units(bytes, format, unit) {
+  format = format.toUpperCase();
+  let formatted = '';
+
+  switch (format) {
+    case 'B':
+      formatted = bytes.toFixed(2);
+      break;
+    case 'KB':
+      formatted = (bytes / 1024).toFixed(2);
+      break;
+    case 'MB':
+      formatted = (bytes / (1024 * 1024)).toFixed(2);
+      break;
+    default:
+      console.warn(
+        `Unsupported format "${format}" provided. Falling back to auto-formatting.`
+      );
+      return auto(bytes, unit);
+  }
+
+  return unit ? `${formatted} ${format}` : formatted;
+}
+
+var utils = {
   parse,
   isUndefined,
   isNull,
+  units,
 };
 
 function isInvalidArg(key) {
@@ -115,12 +148,12 @@ function get(key, defaultValue = null) {
   const namespacedKey = config.generateKey(key);
   const value = this.storage.getItem(namespacedKey);
 
-  if (util.isNull(value)) {
+  if (utils.isNull(value)) {
     return defaultValue;
   }
 
   try {
-    let parsedData = util.parse(value);
+    let parsedData = utils.parse(value);
 
     if (parsedData.expire && Date.now() > parsedData.expire) {
       this.remove(key);
@@ -220,6 +253,23 @@ function trim(key) {
   return this.storage.get(key).trim();
 }
 
+function size(key, options = {}) {
+  const value = this.get(key);
+
+  if (value === null) {
+    return 0;
+  }
+
+  const bytes = new Blob([JSON.stringify(value)]).size;
+
+  if (options.format) {
+    let unit = 'unit' in options ? options.unit : true;
+    return utils.units(bytes, options.format, unit);
+  }
+
+  return bytes;
+}
+
 function setFormattedData(key, obj) {
   const seprator = getSeparator();
 
@@ -246,7 +296,56 @@ function getFormattedData(key) {
   return result;
 }
 
+const DEFAULT_CAPACITY$1 = 5 * 1024 * 1024; // 5 MB
+
+function free(options = {}) {
+  const capacity = options.capacity || DEFAULT_CAPACITY$1;
+  const total = this.used();
+  const remaining = capacity - total;
+  const bytes = remaining > 0 ? remaining : 0;
+
+  if (options.format) {
+    let unit = 'unit' in options ? options.unit : true;
+    return utils.units(bytes, options.format, unit);
+  }
+
+  return bytes;
+}
+
+function used() {
+  let totalBytes = 0;
+  const seprator = getSeparator();
+
+  for (let i = 0; i < this.count; i++) {
+    const completkey = this.key(i);
+    const [, currentkey] = completkey.split(`${seprator}`, 2);
+
+    const value = this.get(currentkey);
+    totalBytes += new Blob([JSON.stringify(completkey)]).size;
+    totalBytes += new Blob([JSON.stringify(value)]).size;
+  }
+
+  return totalBytes;
+}
+
+const DEFAULT_CAPACITY = 5 * 1024 * 1024; // 5 MB
+
+function capacity(options = {}) {
+  const bytes = options.capacity || DEFAULT_CAPACITY;
+
+  if (options.format) {
+    let unit = 'unit' in options ? options.unit : true;
+    return utils.units(bytes, options.format, unit);
+  }
+
+  return bytes;
+}
+
 var storageMethods = {
+  size,
+  free,
+  used,
+  capacity,
   from,
   get,
   set,

@@ -142,3 +142,34 @@ Empty the entire storage.
 // Clears all data from local storage
 db.local.clear();
 ```
+
+### size(key: string, options={ format?: "B" | "KB" | "MB"; unit?: boolean }): string | number
+Get the size of the value for a specific key.
+
+```javascript
+const sizeInBytes = 2 * 1024 * 1024; // 2 MB
+const largeString = "A".repeat(sizeInBytes); // Create a 2MB string
+const largeObject = { data: largeString };
+
+db.local.set('largeObj', largeObject);
+console.log(db.local.size('largeObj')); // 2097163 (raw bytes)
+console.log(db.local.size('largeObj', { format: 'KB', unit: true })); // 2.00 MB
+```
+
+### free(options={ format?: "B" | "KB" | "MB"; unit?: boolean }): string | number
+Get the remaining free space in local or session storage.
+
+```javascript
+
+console.log(db.local.free()); // raw bytes
+console.log(db.local.free({ format: 'mb', unit: true })); // e.g., "3.00 MB"
+```
+
+### capacity(options={ format?: "B" | "KB" | "MB"; unit?: boolean }): string | number
+Get the total capacityof local or session storage.
+
+```javascript
+
+console.log(db.local.capacity()); // raw bytes
+console.log(db.local.capacity({ format: 'mb', unit: true })); // e.g., "5.00 MB"
+```
