@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/pankajbisht/opendb-store/compare/v1.2.1...v1.3.0) (2025-03-06)
+
+
+### Features
+
+* **size:** add free, size and capacity method ([817eaf6](https://github.com/pankajbisht/opendb-store/commit/817eaf6c8c3ed3aa8794faa7ff7601564f8d3fca))
+
 ## [1.2.1](https://github.com/pankajbisht/opendb-store/compare/v1.2.0...v1.2.1) (2025-02-16)
 
 
