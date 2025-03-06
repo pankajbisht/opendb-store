@@ -1,6 +1,6 @@
 {
   "name": "opendb-store",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A lightweight utility to manage browser storage (localStorage, sessionStorage, and cookies) with advanced features. Easily configure namespaces, key trimming, and data expiry.",
   "main": "./dist/opendb-umd.js",
   "module": "./dist/opendb-esm.js",
