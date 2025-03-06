@@ -42,7 +42,7 @@
     return `${config$1.namespace}${config$1.separator}${key}`;
   }
 
-  const version = '1.1.1';
+  const version = '1.2.0';
 
   var config = {
     version,
