@@ -72,7 +72,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          echo "Token length is ${#GITHUB_TOKEN}"
           npx semantic-release --debug
 
 
