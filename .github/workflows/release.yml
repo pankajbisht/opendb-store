@@ -68,8 +68,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       # Step 10: Run semantic-release
-      - name: Run semantic-release
-        run: npx semantic-release --debug
+      # - name: Run semantic-release
+      #   run: npx semantic-release --debug
         # env:
         #   GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
