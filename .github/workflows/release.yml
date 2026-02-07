@@ -71,7 +71,9 @@ jobs:
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npx semantic-release --debug
+        run: |
+          echo "Token length is ${#GITHUB_TOKEN}"
+          npx semantic-release --debug
 
 
       # Step 11: Final message
