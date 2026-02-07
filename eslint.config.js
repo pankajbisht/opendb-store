@@ -34,11 +34,12 @@ export default [
       prettier: prettierPlugin,
     },
     rules: {
-      'prettier/prettier': 'error',
-      'no-console': 'warn',
-      'eqeqeq': 'error',
-      'no-unused-vars': 'warn',
-    },
+        'prettier/prettier': 'error',
+        'no-console': ['warn', { allow: ['warn', 'error'] }],
+        'no-useless-assignment': 'off',
+        eqeqeq: 'error',
+        'no-unused-vars': 'warn',
+    }
   },
   pluginJs.configs.recommended,
   prettierConfig,

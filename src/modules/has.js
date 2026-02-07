@@ -6,5 +6,11 @@
  */
 
 export default function has(key) {
-  return !!this.get(key);
+  const value = this.get(key);
+
+  if (value === null) return false;
+  if (value === '') return false;
+  if (value === 'undefined' || value === undefined) return false;
+
+  return true;
 }

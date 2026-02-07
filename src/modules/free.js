@@ -1,6 +1,5 @@
 import util from '../utils/index.js';
-
-const DEFAULT_CAPACITY = 5 * 1024 * 1024; // 5 MB
+import { DEFAULT_CAPACITY } from '../const/capacity.js';
 
 export default function free(options = {}) {
   const capacity = options.capacity || DEFAULT_CAPACITY;

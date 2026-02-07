@@ -33,7 +33,7 @@ function generateKey(key) {
   return `${config$1.namespace}${config$1.separator}${key}`;
 }
 
-const version = '1.2.0';
+const version = '2.0.0';
 
 var config = {
   version,
@@ -99,7 +99,7 @@ function auto(bytes, unit) {
 
 function units(bytes, format, unit) {
   format = format.toUpperCase();
-  let formatted = '';
+  let formatted;
 
   switch (format) {
     case 'B':
@@ -161,7 +161,8 @@ function get(key, defaultValue = null) {
     }
 
     return parsedData.value;
-  } catch {
+  } catch (error) {
+    console.warn(`Failed to parse stored value for key "${key}":`, error);
     return defaultValue;
   }
 }
@@ -199,7 +200,13 @@ function set(key, value, options = {}) {
  */
 
 function has(key) {
-  return !!this.get(key);
+  const value = this.get(key);
+
+  if (value === null) return false;
+  if (value === '') return false;
+  if (value === 'undefined' || value === undefined) return false;
+
+  return true;
 }
 
 /**
@@ -271,35 +278,35 @@ function size(key, options = {}) {
 }
 
 function setFormattedData(key, obj) {
-  const seprator = getSeparator();
+  const separator = getSeparator();
 
   for (let k in obj) {
     if (k in obj) {
-      this.set(`${key}${seprator}${k}`, obj[k]);
+      this.set(`${key}${separator}${k}`, obj[k]);
     }
   }
 }
 
 function getFormattedData(key) {
   const result = {};
-  const seprator = getSeparator();
+  const separator = getSeparator();
 
   for (let i = 0, size = this.storage.length; i < size; i++) {
     const completkey = this.key(i);
-    const [, objectkey, currentkey] = completkey.split(`${seprator}`, 3);
+    const [, objectkey, currentkey] = completkey.split(`${separator}`, 3);
 
     if (objectkey === key && currentkey) {
-      result[currentkey] = this.get(`${objectkey}${seprator}${currentkey}`);
+      result[currentkey] = this.get(`${objectkey}${separator}${currentkey}`);
     }
   }
 
   return result;
 }
 
-const DEFAULT_CAPACITY$1 = 5 * 1024 * 1024; // 5 MB
+const DEFAULT_CAPACITY = 5 * 1024 * 1024; // 5 MB
 
 function free(options = {}) {
-  const capacity = options.capacity || DEFAULT_CAPACITY$1;
+  const capacity = options.capacity || DEFAULT_CAPACITY;
   const total = this.used();
   const remaining = capacity - total;
   const bytes = remaining > 0 ? remaining : 0;
@@ -314,11 +321,11 @@ function free(options = {}) {
 
 function used() {
   let totalBytes = 0;
-  const seprator = getSeparator();
+  const separator = getSeparator();
 
   for (let i = 0; i < this.count; i++) {
     const completkey = this.key(i);
-    const [, currentkey] = completkey.split(`${seprator}`, 2);
+    const [, currentkey] = completkey.split(`${separator}`, 2);
 
     const value = this.get(currentkey);
     totalBytes += new Blob([JSON.stringify(completkey)]).size;
@@ -327,8 +334,6 @@ function used() {
 
   return totalBytes;
 }
-
-const DEFAULT_CAPACITY = 5 * 1024 * 1024; // 5 MB
 
 function capacity(options = {}) {
   const bytes = options.capacity || DEFAULT_CAPACITY;

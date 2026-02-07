@@ -8,7 +8,7 @@ function auto(bytes, unit) {
 
 export default function units(bytes, format, unit) {
   format = format.toUpperCase();
-  let formatted = '';
+  let formatted;
 
   switch (format) {
     case 'B':

@@ -31,7 +31,8 @@ export default function get(key, defaultValue = null) {
     }
 
     return parsedData.value;
-  } catch {
+  } catch (error) {
+    console.warn(`Failed to parse stored value for key "${key}":`, error);
     return defaultValue;
   }
 }

@@ -1,4 +1,4 @@
-import { isInvalidArg } from './isInvalidArg';
+import { isInvalidArg } from './isInvalidArg.js';
 
 export default {
   isInvalidArg,

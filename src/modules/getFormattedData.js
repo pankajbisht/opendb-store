@@ -2,14 +2,14 @@ import { getSeparator } from '../config/config.js';
 
 export default function getFormattedData(key) {
   const result = {};
-  const seprator = getSeparator();
+  const separator = getSeparator();
 
   for (let i = 0, size = this.storage.length; i < size; i++) {
     const completkey = this.key(i);
-    const [, objectkey, currentkey] = completkey.split(`${seprator}`, 3);
+    const [, objectkey, currentkey] = completkey.split(`${separator}`, 3);
 
     if (objectkey === key && currentkey) {
-      result[currentkey] = this.get(`${objectkey}${seprator}${currentkey}`);
+      result[currentkey] = this.get(`${objectkey}${separator}${currentkey}`);
     }
   }
 
