@@ -1,16 +1,37 @@
-name: Pull Request CI Pipeline
+name: CI & Release
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
-    branches:
-      - master
+    branches: [master]
+  push:
+    branches: [master]
 
 jobs:
-  build:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  ci:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  release:
+    name: Release to npm
+    needs: ci
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     permissions:
@@ -18,80 +39,25 @@ jobs:
       issues: write
       pull-requests: write
 
-
     steps:
-      # Step 1: Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Step 2: Set up Node.js
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: https://registry.npmjs.org
 
-      # Step 3: Install dependencies
       - name: Install dependencies
-        run: npm ci   
+        run: npm ci
 
-      # Step 4: Ensure dist folder exists
-      - name: Ensure dist folder exists
-        run: mkdir -p dist
-
-      # Step 5: Verify if dist folder exists before build
-      - name: Verify dist folder before build
-        run: ls -la dist || echo "dist folder does not exist"
-
-      # Step 6: Run build
-      - name: Run Build
+      - name: Build
         run: npm run build
 
-      # Step 7: Verify if build files are generated
-      - name: Verify dist folder after build
-        run: ls -la dist || echo "dist folder is still empty"
-
-      # Step 8: Configure Git User
-      - name: Configure Git User
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      # Step 9: Add dist folder and commit changes if dist has changes
-      - name: Add dist folder and commit changes
-        run: |
-          git diff --exit-code dist || (
-            echo "Changes detected in dist folder"
-            git add dist/
-            git commit -m "chore: update dist files" || echo "No changes to commit"
-            git push origin master
-          )
+      - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Step 9b: Verify npm credentials
-      - name: Verify npm credentials
-        run: |
-          npm whoami
-        env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # Step 10: Run semantic-release
-      - name: Run semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_AUTHOR_NAME: github-actions[bot]
-          GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm ci
-          npx semantic-release --debug
-
-
-      # Step 11: Final message
-      - name: Everything Done
-        run: echo "🎉 Build and Release Process Completed Successfully"
+        run: npx semantic-release
