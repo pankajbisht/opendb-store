@@ -56,6 +56,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify npm authentication (DEBUG)
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
