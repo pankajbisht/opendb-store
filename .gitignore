@@ -1,6 +1,5 @@
 # Node.js modules
 node_modules/
-dist/
 
 # Build output
 coverage/
