@@ -269,9 +269,11 @@ function size(key, options = {}) {
 
   const bytes = new Blob([JSON.stringify(value)]).size;
 
-  if (options.format) {
-    let unit = 'unit' in options ? options.unit : true;
-    return utils.units(bytes, options.format, unit);
+  if (options.format || 'unit' in options) {
+    const format = options.format || 'MB';
+    const unit = 'unit' in options ? options.unit : true;
+
+    return utils.units(bytes, format, unit);
   }
 
   return bytes;
@@ -311,9 +313,11 @@ function free(options = {}) {
   const remaining = capacity - total;
   const bytes = remaining > 0 ? remaining : 0;
 
-  if (options.format) {
-    let unit = 'unit' in options ? options.unit : true;
-    return utils.units(bytes, options.format, unit);
+  if (options.format || 'unit' in options) {
+    const format = options.format || 'MB';
+    const unit = 'unit' in options ? options.unit : true;
+
+    return utils.units(bytes, format, unit);
   }
 
   return bytes;
@@ -338,9 +342,11 @@ function used() {
 function capacity(options = {}) {
   const bytes = options.capacity || DEFAULT_CAPACITY;
 
-  if (options.format) {
-    let unit = 'unit' in options ? options.unit : true;
-    return utils.units(bytes, options.format, unit);
+  if (options.format || 'unit' in options) {
+    const format = options.format || 'MB';
+    const unit = 'unit' in options ? options.unit : true;
+
+    return utils.units(bytes, format, unit);
   }
 
   return bytes;

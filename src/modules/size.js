@@ -9,9 +9,11 @@ export default function size(key, options = {}) {
 
   const bytes = new Blob([JSON.stringify(value)]).size;
 
-  if (options.format) {
-    let unit = 'unit' in options ? options.unit : true;
-    return util.units(bytes, options.format, unit);
+  if (options.format || 'unit' in options) {
+    const format = options.format || 'MB';
+    const unit = 'unit' in options ? options.unit : true;
+
+    return util.units(bytes, format, unit);
   }
 
   return bytes;
