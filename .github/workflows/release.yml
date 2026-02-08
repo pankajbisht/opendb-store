@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+          registry-url: 'https://registry.npmjs.org'
 
       # Step 3: Install dependencies
       - name: Install dependencies
@@ -69,6 +70,13 @@ jobs:
           )
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 9b: Verify npm credentials
+      - name: Verify npm credentials
+        run: |
+          npm whoami
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Step 10: Run semantic-release
       - name: Run semantic-release
