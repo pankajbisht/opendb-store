@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/pankajbisht/opendb-store/compare/v1.3.0...v1.4.0) (2026-02-08)
+
+
+### Bug Fixes
+
+* **type:** type file path change ([4dcbaf5](https://github.com/pankajbisht/opendb-store/commit/4dcbaf502e72e8441de4e4e0f1fb7d0eb60032e9))
+
+
+### Features
+
+* **latest:** Update npm packages, Add Type support and Bug fixes ([c0e3a88](https://github.com/pankajbisht/opendb-store/commit/c0e3a88f234ae5e5c0febe6ebb59ec907542785e))
+
 # [1.3.0](https://github.com/pankajbisht/opendb-store/compare/v1.2.1...v1.3.0) (2025-03-06)
 
 
