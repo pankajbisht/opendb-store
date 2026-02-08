@@ -52,13 +52,11 @@ jobs:
       - name: Verify dist folder after build
         run: ls -la dist || echo "dist folder is still empty"
 
-      # Step 8: Configure Git User and Credentials
-      - name: Configure Git User and Credentials
+      # Step 8: Configure Git User
+      - name: Configure Git User
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global credential.helper store
-          echo "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
 
       # Step 9: Add dist folder and commit changes if dist has changes
       - name: Add dist folder and commit changes
@@ -69,17 +67,20 @@ jobs:
             git commit -m "chore: update dist files" || echo "No changes to commit"
             git push origin master
           )
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 10: Run semantic-release
       - name: Run semantic-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          npm ci
           npx semantic-release --debug
 
 
