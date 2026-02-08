@@ -4,7 +4,7 @@
   "description": "A lightweight utility to manage browser storage (localStorage, sessionStorage, and cookies) with advanced features. Easily configure namespaces, key trimming, and data expiry.",
   "main": "./dist/opendb-umd.js",
   "module": "./dist/opendb-esm.js",
-  "types": "./src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     "import": "./dist/opendb-esm.js",
     "require": "./dist/opendb-umd.js"
@@ -19,6 +19,7 @@
     "dist/opendb-esm.min.js",
     "dist/opendb-umd.js",
     "dist/opendb-umd.min.js",
+    "dist/index.d.ts",
     "README.md"
   ],
   "scripts": {
