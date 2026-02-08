@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/pankajbisht/opendb-store/compare/v1.4.0...v1.5.0) (2026-02-08)
+
+
+### Features
+
+* **storage:** update storage set default label for capacity ([a4a40df](https://github.com/pankajbisht/opendb-store/commit/a4a40dfef4cd0e09faeaea9bb4dcd2ba6367d869))
+
 # [1.4.0](https://github.com/pankajbisht/opendb-store/compare/v1.3.0...v1.4.0) (2026-02-08)
 
 
