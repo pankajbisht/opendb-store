@@ -10,6 +10,7 @@ on:
 
 jobs:
   build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     permissions:
@@ -34,7 +35,7 @@ jobs:
 
       # Step 3: Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: npm ci   
 
       # Step 4: Ensure dist folder exists
       - name: Ensure dist folder exists
