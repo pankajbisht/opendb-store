@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Error handling | opendb-store</title>
+    <link rel="stylesheet" href="../../shared/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "opendb-store": "../../../dist/opendb-esm.js",
+          "opendb-store/query": "../../../dist/query.js",
+          "opendb-store/debug": "../../../dist/debug.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../">All examples</a>
+      <h1>Error handling</h1>
+      <p>Operations never throw. Every failure returns a result and reaches one handler.</p>
+      <div class="row">
+        <button id="circular">Store a circular object</button>
+        <button id="expire">Use an invalid expiry</button>
+        <button id="cookie">Store a 5 KB cookie</button>
+        <button id="corrupt">Read corrupt data</button>
+        <button id="quota">Fill localStorage</button>
+      </div>
+      <p>Last result: <strong id="result"></strong></p>
+      <h2>Reported to onError</h2>
+      <ul id="errors"></ul>
+      <p class="source">Source: <code>public/examples/error-handling/main.js</code></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

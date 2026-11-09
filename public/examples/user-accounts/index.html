@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Per-user data and logout | opendb-store</title>
+    <link rel="stylesheet" href="../../shared/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "opendb-store": "../../../dist/opendb-esm.js",
+          "opendb-store/query": "../../../dist/query.js",
+          "opendb-store/debug": "../../../dist/debug.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../">All examples</a>
+      <h1>Per-user data and logout</h1>
+      <p>Each user gets a namespace, so logging out removes only that user's data.</p>
+      <div class="row">
+        <label for="user">Signed in as</label>
+        <select id="user"><option>ada</option><option>grace</option></select>
+      </div>
+      <form id="form" class="row">
+        <input id="note" placeholder="Add a recent search" required />
+        <button>Add</button>
+      </form>
+      <button id="logout" class="secondary">Log out this user</button>
+      <h2>Data for each user</h2>
+      <pre id="output"></pre>
+      <p class="source">Source: <code>public/examples/user-accounts/main.js</code></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
