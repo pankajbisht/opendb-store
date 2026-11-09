@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createMemoryAdapter } from '../src/adapters/memory';
-import { isQuotaError } from '../src/adapters/web';
+import { isQuotaError } from '../src/errors';
 import { createStore, StoreError } from '../src/index';
 import type { StorageAdapter } from '../src/types';
 

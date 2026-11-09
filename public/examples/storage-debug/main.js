@@ -1,21 +1,25 @@
 import { createStore } from 'opendb-store';
 import { debug, inspect } from 'opendb-store/debug';
+import { createIndexedStore } from 'opendb-store/indexeddb';
 import { $, el } from '../../shared/ui.js';
 
 const stores = {
   local: createStore({ namespace: 'debug-demo', storage: 'local' }),
   session: createStore({ namespace: 'debug-demo', storage: 'session' }),
   cookie: createStore({ namespace: 'debug-demo', storage: 'cookie' }),
+  indexeddb: createIndexedStore({ namespace: 'debug-demo' }),
 };
 
 let id = 0;
 
-function addToAll(length, expire) {
+async function addToAll(length, expire) {
   id++;
-  Object.values(stores).forEach((store) => {
-    store.set(`entry-${id}`, 'x'.repeat(length), { expire });
-  });
-  render();
+  await Promise.all(
+    Object.values(stores).map((store) =>
+      store.set(`entry-${id}`, 'x'.repeat(length), { expire })
+    )
+  );
+  await render();
 }
 
 function formatSize(size) {
@@ -53,20 +57,21 @@ function reportCard(name, report) {
   );
 }
 
-function render() {
-  $('#reports').replaceChildren(
-    ...Object.entries(stores).map(([name, store]) =>
-      reportCard(name, inspect(store))
+async function render() {
+  const cards = await Promise.all(
+    Object.entries(stores).map(async ([name, store]) =>
+      reportCard(name, await inspect(store))
     )
   );
+  $('#reports').replaceChildren(...cards);
 }
 
 $('#small').addEventListener('click', () => addToAll(50));
 $('#large').addEventListener('click', () => addToAll(3000, 60_000));
 $('#print').addEventListener('click', () => debug(stores));
-$('#clear').addEventListener('click', () => {
-  Object.values(stores).forEach((store) => store.clear());
-  render();
+$('#clear').addEventListener('click', async () => {
+  await Promise.all(Object.values(stores).map((store) => store.clear()));
+  await render();
 });
 
 render();

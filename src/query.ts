@@ -1,19 +1,28 @@
-import type { Key, Store } from './types';
+import type { Key } from './types';
 
-type Reader = Pick<Store, 'get'>;
+/** A synchronous store, or an IndexedDB store whose results are promises. */
+type Reader = { get(key: Key): unknown; readonly async?: boolean };
 type Item = Record<string, unknown>;
+type Result<S, T> = S extends { async: true } ? Promise<T> : T;
 
-function readObject(store: Reader, key: Key): Item | undefined {
-  const value = store.get<unknown>(key);
+function using<S extends Reader, T>(
+  store: S,
+  key: Key,
+  read: (value: unknown) => T
+): Result<S, T> {
+  const value = store.get(key);
+  return (
+    store.async ? Promise.resolve(value).then(read) : read(value)
+  ) as Result<S, T>;
+}
+
+function asObject(value: unknown): Item | undefined {
   return typeof value === 'object' && value !== null
     ? (value as Item)
     : undefined;
 }
 
-function readList(store: Reader, key: Key): Item[] {
-  const value = store.get<unknown>(key);
-  return Array.isArray(value) ? value : [];
-}
+const asList = (value: unknown): Item[] => (Array.isArray(value) ? value : []);
 
 function hasField(item: unknown, field: string): boolean {
   return Object.prototype.hasOwnProperty.call(item ?? {}, field);
@@ -30,43 +39,67 @@ function matcher(conditions: Item) {
 }
 
 /** Returns a copy of the stored object with only the named fields. */
-export function pick(store: Reader, key: Key, fields: string[]): Item {
-  const source = readObject(store, key);
-  if (!source || !Array.isArray(fields)) return {};
+export function pick<S extends Reader>(
+  store: S,
+  key: Key,
+  fields: string[]
+): Result<S, Item> {
+  return using(store, key, (value) => {
+    const source = asObject(value);
+    if (!source || !Array.isArray(fields)) return {};
 
-  // fromEntries defines plain properties, so `__proto__` cannot set a prototype.
-  return Object.fromEntries(
-    fields.filter((name) => hasField(source, name)).map((n) => [n, source[n]])
-  );
+    // fromEntries defines plain properties, so `__proto__` cannot set a prototype.
+    return Object.fromEntries(
+      fields.filter((name) => hasField(source, name)).map((n) => [n, source[n]])
+    );
+  });
 }
 
 /** Returns a copy of the stored object without the named fields. */
-export function omit(store: Reader, key: Key, fields: string[]): Item {
-  const source = readObject(store, key);
-  if (!source || !Array.isArray(fields)) return {};
+export function omit<S extends Reader>(
+  store: S,
+  key: Key,
+  fields: string[]
+): Result<S, Item> {
+  return using(store, key, (value) => {
+    const source = asObject(value);
+    if (!source || !Array.isArray(fields)) return {};
 
-  return Object.fromEntries(
-    Object.entries(source).filter(([field]) => !fields.includes(field))
-  );
+    return Object.fromEntries(
+      Object.entries(source).filter(([name]) => !fields.includes(name))
+    );
+  });
 }
 
 /** Returns one field from each item in a stored array, skipping missing ones. */
-export function pluck<T = unknown>(store: Reader, key: Key, name: string): T[] {
-  return readList(store, key)
-    .map((item) => field(item, name) as T)
-    .filter((value) => value !== null && value !== undefined);
+export function pluck<T = unknown, S extends Reader = Reader>(
+  store: S,
+  key: Key,
+  name: string
+): Result<S, T[]> {
+  return using(store, key, (value) =>
+    asList(value)
+      .map((item) => field(item, name) as T)
+      .filter((found) => found !== null && found !== undefined)
+  );
 }
 
 /** Returns every item in a stored array that matches all conditions. */
-export function where(store: Reader, key: Key, conditions: Item): Item[] {
-  return readList(store, key).filter(matcher(conditions));
+export function where<S extends Reader>(
+  store: S,
+  key: Key,
+  conditions: Item
+): Result<S, Item[]> {
+  return using(store, key, (value) =>
+    asList(value).filter(matcher(conditions))
+  );
 }
 
 /** Returns the first item in a stored array that matches all conditions. */
-export function findWhere(
-  store: Reader,
+export function findWhere<S extends Reader>(
+  store: S,
   key: Key,
   conditions: Item
-): Item | undefined {
-  return readList(store, key).find(matcher(conditions));
+): Result<S, Item | undefined> {
+  return using(store, key, (value) => asList(value).find(matcher(conditions)));
 }

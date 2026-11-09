@@ -6,6 +6,12 @@
 | `index.ts` | Public entry: default db, `local`, `session`, `cookie`, `createStore`, `createMemoryAdapter`, `StoreError`, `version`, types |
 | `query.ts` | Public entry `opendb-store/query`: `pick omit pluck where findWhere`; takes a store first |
 | `debug.ts` | Public entry `opendb-store/debug`: `inspect`, `debug` |
+| `options.ts` | Shared option checks and `createReporter` |
+| `indexeddb/index.ts` | Public entry `opendb-store/indexeddb`: `indexed`, `createIndexedStore` |
+| `indexeddb/store.ts` | Async operations against a `Backend` |
+| `indexeddb/backend.ts` | Real IndexedDB, memory fallback, server no-op; `update` is the atomic primitive |
+| `indexeddb/events.ts` | Subscribers, `BroadcastChannel` |
+| `indexeddb/estimate.ts` | `estimateSize` |
 | `store.ts` | `createStore`: validates options, lazy adapter, default reporter, builds frozen store |
 | `types.ts` | All public interfaces (`Store`, `StoreOptions`, `StorageAdapter`, `CookieOptions`, …) |
 | `context.ts` | `Context` type passed to operations |
@@ -30,8 +36,8 @@
 
 ## tests/
 `contract` (all backends) · `expiry` · `compat` (2.0.1 payloads) · `failures` · `ssr` · `query` · `cookie` ·
-`events` · `migrate` · `debug` · `security` · `browser/quota` · `browser/real-browser`.
-The `browser` project runs contract, expiry, compat, query, migrate, and `browser/*`.
+`events` · `migrate` · `debug` · `security` · `indexeddb` · `indexeddb-failures` · `indexeddb-ssr` · `browser/quota` · `browser/real-browser`.
+The `browser` project runs contract, expiry, compat, query, migrate, indexeddb, and `browser/*`.
 
 ## Other
 | Path | Notes |

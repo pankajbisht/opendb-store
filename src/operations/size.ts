@@ -20,7 +20,7 @@ function auto(size: number, unit: boolean | undefined): string {
   return `${(size / Math.pow(1024, index)).toFixed(2)}${unit ? ` ${units[index]}` : ''}`;
 }
 
-function format(size: number, options?: FormatOptions): number | string {
+export function format(size: number, options?: FormatOptions): number | string {
   const opts = options ?? {};
   if (!opts.format && !('unit' in opts)) return size;
 

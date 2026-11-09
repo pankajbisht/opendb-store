@@ -1,7 +1,7 @@
 # API reference
 
 > **Status:** this describes 3.0, which is built but not yet published. The [README](../README.md) has worked
-> examples. For what is on npm today, see [Using 2.0.1](#using-201).
+> examples. IndexedDB has [its own section](#indexeddb). For what is on npm today, see [Using 2.0.1](#using-201).
 
 CommonJS and script tags expose the same names: `require('opendb-store').local` and `window.db.local`.
 
@@ -116,6 +116,7 @@ default, and the stored data is kept. Stores without `version` write the plain 2
 ## Debug tools
 
 A separate entry point, `opendb-store/debug`. Script tags use `dist/debug-umd.min.js` and the global `dbDebug`.
+With an IndexedDB store, or a set of stores including one, `inspect` and `debug` return promises.
 
 ```ts
 import { debug, inspect } from 'opendb-store/debug';
@@ -155,6 +156,40 @@ writes return `false` and report `STORAGE_UNAVAILABLE`. This stops one request's
 [SECURITY.md](SECURITY.md#on-a-server).
 
 For Node scripts and tests, use `createStore({ storage: createMemoryAdapter() })`.
+
+## IndexedDB
+
+A separate entry point, `opendb-store/indexeddb`. Script tags use `dist/indexeddb-umd.min.js` and the global
+`dbIndexed`.
+
+```ts
+import { indexed, createIndexedStore } from 'opendb-store/indexeddb';
+
+await indexed.set('k', new Date());
+const files = createIndexedStore({ namespace: 'files', database: 'my-app' });
+```
+
+`createIndexedStore` takes the `createStore` options except `storage` and `cookie`, plus `database`, which defaults
+to `opendb-store`. Passing `storage: 'indexeddb'` to `createStore` is an error, because the return type differs.
+
+A store has the same members as the others, except that each method returns a promise that never rejects and
+`count` is a promise. `subscribe` is the exception: it returns its unsubscribe function directly. Stores also have
+`async: true` and `database`. Query helpers and debug tools accept these stores and return promises.
+
+**What differs from the other stores**
+
+| Topic | Behaviour |
+| --- | --- |
+| Values | Structured clone, not JSON. `Date`, `Map`, `Set`, `ArrayBuffer`, typed arrays, and `Blob` are kept |
+| Unsupported values | Anything that cannot be cloned returns `false` with `SERIALIZE_FAILED` |
+| Atomicity | `patch`, `remove`, expiry, and migrations each run in one transaction |
+| `serializer` | Receives the value only, so expiry stays readable and can be indexed |
+| Sizes | Estimates; `capacity` and `free` use `navigator.storage.estimate()`, with 50 MB assumed if unavailable |
+| Other tabs | Notified through `BroadcastChannel` |
+| Blocked by the browser | Falls back to memory for that tab and reports `STORAGE_UNAVAILABLE` once. So does an open that takes over 5 seconds |
+| Server | Keeps nothing, as with the other stores |
+| Safari private browsing | Cannot store a `Blob`; `set` returns `false`. An `ArrayBuffer` works |
+| Errors | Each entry point has its own `StoreError` class, so compare `error.code` rather than using `instanceof` |
 
 ## Using 2.0.1
 

@@ -25,7 +25,11 @@ export function decodeEntry(
   serializer: Serializer,
   raw: string
 ): Entry | undefined {
-  const data = serializer.deserialize(raw);
+  return sanitizeEntry(serializer.deserialize(raw));
+}
+
+/** Returns `undefined` for anything that is not an entry. */
+export function sanitizeEntry(data: unknown): Entry | undefined {
   if (!isEntry(data)) return undefined;
 
   // Stored data can be edited, so metadata must be a number to be trusted.

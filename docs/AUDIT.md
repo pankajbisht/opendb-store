@@ -139,3 +139,20 @@ about 1 microsecond of the native calls and did not change.
 Each store reads and parses on every `get`, by design. Repeated reads of very large values cost about 0.1 to 1 ms
 per megabyte, so hold large results in a variable rather than re-reading them in a loop.
 
+
+## IndexedDB performance (2026-11-09)
+
+Measured in Chromium, Firefox, and WebKit against raw IndexedDB calls.
+
+| Case | Chromium | Firefox | WebKit |
+| --- | --- | --- | --- |
+| Raw `put` | 0.09 ms | 0.13 ms | 0.24 ms |
+| `set` | 0.12 ms | 0.17 ms | 0.17 ms |
+| Raw `get` | 0.08 ms | 0.07 ms | 0.15 ms |
+| `get` | 0.09 ms | 0.14 ms | 0.20 ms |
+| `patch` | 0.19 ms | 0.27 ms | 0.32 ms |
+| 1,000 parallel `set` calls | 109 ms | 132 ms | 181 ms |
+| `keys()` with 3,001 entries | 63 ms | 12 ms | 8 ms |
+| `purgeExpired()` with nothing to remove | 0.7 ms | under 0.1 ms | 0.3 ms |
+
+`keys()` and `count` decode every record, so they stay consistent with `has` and `get`.

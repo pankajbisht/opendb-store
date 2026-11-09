@@ -1,14 +1,17 @@
-import { isQuotaError } from '../adapters/web';
 import { decodeEntry, isExpired, type Entry } from '../codec/entry';
 import { normalizeKey } from '../codec/key';
 import type { Context } from '../context';
+import { isQuotaError } from '../errors';
 import { emit } from './events';
 
 /** Normalizes a key for a write, reporting it if invalid. */
-export function requireKey(ctx: Context, key: unknown): string | undefined {
+export function requireKey(
+  ctx: Pick<Context, 'report'>,
+  key: unknown
+): string | undefined {
   const normalized = normalizeKey(key);
   if (normalized === undefined) {
-    ctx.report('INVALID_KEY', `Invalid key of type ${typeof key}`);
+    ctx.report('INVALID_KEY', `Invalid key: ${typeof key}`);
   }
   return normalized;
 }
@@ -25,7 +28,7 @@ export function allRawKeys(ctx: Context): string[] {
       if (key !== null) keys.push(key);
     }
   } catch (error) {
-    ctx.report('STORAGE_UNAVAILABLE', 'Failed to list keys', undefined, error);
+    ctx.report('STORAGE_UNAVAILABLE', 'List failed', undefined, error);
   }
 
   return keys;

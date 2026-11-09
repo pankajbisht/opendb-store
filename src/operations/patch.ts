@@ -3,7 +3,9 @@ import type { Key } from '../types';
 import { readEntry, requireKey, writeEntry } from './internal';
 import { set } from './set';
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+export function isPlainObject(
+  value: unknown
+): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 

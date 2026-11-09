@@ -43,13 +43,16 @@ Things to know:
 | `tests/events.test.ts` | Subscriptions and purging |
 | `tests/migrate.test.ts` | Schema migrations |
 | `tests/debug.test.ts` | The debug tools |
+| `tests/indexeddb.test.ts` | IndexedDB behaviour; uses `fake-indexeddb` in jsdom and the real thing in browsers |
+| `tests/indexeddb-failures.test.ts` | Blocked storage, quota, closed connections, and never rejecting |
+| `tests/indexeddb-ssr.test.ts` | IndexedDB without a `window` |
 | `tests/security.test.ts` | Injection, tampered data, failure containment, and efficiency guards |
 | `tests/browser/` | Real quota, real cookies, and real cross-document events |
 
 ## Limits enforced by tooling
 
 - Coverage: at least 95% of lines, statements, and functions, and 90% of branches.
-- Size: 3.8 kB gzipped for `dist/opendb-esm.min.js`.
+- Size: 3.9 kB gzipped for `dist/opendb-esm.min.js`, and 4.6 kB for `dist/indexeddb-umd.min.js`.
 - `dependencies` in `package.json` must be empty; `scripts/smoke.mjs` checks this.
 
 ## Commits and releases

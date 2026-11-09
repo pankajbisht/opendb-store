@@ -1,4 +1,5 @@
 import type { CookieOptions, StorageAdapter, StorageKind } from '../types';
+import { isQuotaError } from '../errors';
 import { createCookieAdapter } from './cookie';
 import { createMemoryAdapter } from './memory';
 
@@ -23,16 +24,6 @@ const serverStorage: StorageAdapter = {
   },
   removeItem() {},
 };
-
-export function isQuotaError(error: unknown): boolean {
-  const { name, code } = (error ?? {}) as { name?: string; code?: number };
-  return (
-    name === 'QuotaExceededError' ||
-    name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-    code === 22 ||
-    code === 1014
-  );
-}
 
 function isWritable(storage: StorageAdapter): boolean {
   try {

@@ -26,3 +26,13 @@ export class StoreError extends Error {
     this.cause = cause;
   }
 }
+
+export function isQuotaError(error: unknown): boolean {
+  const { name, code } = (error ?? {}) as { name?: string; code?: number };
+  return (
+    name === 'QuotaExceededError' ||
+    name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    code === 22 ||
+    code === 1014
+  );
+}

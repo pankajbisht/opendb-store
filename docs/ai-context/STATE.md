@@ -1,7 +1,7 @@
 # State (updated 2026-11-09)
 
-**Project:** `opendb-store`, a zero-dependency wrapper for localStorage, sessionStorage, and cookies: JSON,
-namespaces, TTL, cross-tab events, migrations, debug tool. 3.79 kB gzipped.
+**Project:** `opendb-store`, a zero-dependency wrapper for localStorage, sessionStorage, cookies, and IndexedDB: JSON,
+namespaces, TTL, cross-tab events, migrations, debug tool. Core 3.8 kB gzipped; IndexedDB entry 4.5 kB.
 
 **Goal:** production-grade `3.0.0`. Plan: `docs/PRODUCTION_PLAN.md`.
 
@@ -14,7 +14,7 @@ namespaces, TTL, cross-tab events, migrations, debug tool. 3.79 kB gzipped.
 | `refactor/v3` | All code for 3.0, committed locally. Not pushed |
 | Tag `v2.0.1` | Created locally. Must be pushed, or semantic-release computes 2.0.0 and fails |
 
-Verified on `refactor/v3`: 469 unit tests, 99.7% lines; 336 tests each in Chromium, Firefox, WebKit;
+Verified on `refactor/v3`: see `npm test`, `npm run test:browser`, `npm run check:package`;
 `publint`, `attw`, size budget, smoke tests (Node 20 and current); packed tarball in real Vite and Next.js apps
 in all three browsers. GitHub workflows have never run.
 
@@ -23,7 +23,7 @@ Backups of the pre-rewrite tree are in `.git/backups/`.
 ## Hazards
 
 - Pushing to `master` can auto-publish to npm.
-- The core is at 3.79 of 3.8 kB. New features must be subpath exports or need a budget decision.
+- The core is at 3.8 of 3.9 kB. New features must be subpath exports or need a budget decision.
 
 ## Next task
 

@@ -20,6 +20,11 @@ Expiry is enforced by the library only; the data stays readable until it is remo
 - The defaults are `SameSite=Lax` and `Secure` on HTTPS. Be careful when widening them.
 - `SameSite=None` needs `secure: true`, and a broad `domain` exposes the cookie to every subdomain.
 
+## IndexedDB
+
+IndexedDB is readable by any script on your origin, and it is not encrypted. The `serializer` option can encrypt
+values, but it runs synchronously and leaves expiry readable. On a server it keeps nothing, as with the other stores.
+
 ## Treat stored data as untrusted input
 
 Users, browser extensions, and other scripts can change stored values. Validate anything you read before

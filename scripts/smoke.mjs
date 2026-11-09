@@ -36,6 +36,9 @@ const usage = `
   assert.equal(createStore({ namespace: 'x' }).has('k'), false);
   assert.deepEqual(where(db.local, 'none', {}), []);
   assert.equal(db.cookie.set('c', 1), false);
+  assert.equal(await idb.set('k', 1), false);
+  assert.equal(await idb.get('k', 'server'), 'server');
+  assert.equal((await inspect(idb)).count, 0);
   assert.equal(inspect(db.cookie).count, 0);
   console.log('used');
 `;
@@ -53,6 +56,7 @@ try {
        import db, { createStore } from 'opendb-store';
        import { where } from 'opendb-store/query';
        import { inspect } from 'opendb-store/debug';
+       import { indexed as idb } from 'opendb-store/indexeddb';
        ${usage}`
     );
     assert.match(
@@ -72,10 +76,13 @@ try {
        const lib = require('opendb-store');
        const { where } = require('opendb-store/query');
        const { inspect } = require('opendb-store/debug');
+       const { indexed: idb } = require('opendb-store/indexeddb');
        const { createStore } = lib;
        assert.ok(lib.default.local);
        const db = lib;
-       ${usage}`
+       (async () => {
+         ${usage}
+       })();`
     );
     assert.match(
       execFileSync('node', [file], {
@@ -114,10 +121,30 @@ try {
     assert.equal(typeof sandbox.db.noConflict, 'function');
   });
 
+  check('script-tag globals for debug and IndexedDB', () => {
+    const sandbox = {};
+    sandbox.window = sandbox;
+    sandbox.self = sandbox;
+    vm.createContext(sandbox);
+
+    for (const file of ['debug-umd.min.js', 'indexeddb-umd.min.js']) {
+      vm.runInContext(readFileSync(join(root, 'dist', file), 'utf8'), sandbox);
+    }
+
+    assert.equal(typeof sandbox.dbDebug.debug, 'function');
+    assert.equal(typeof sandbox.dbIndexed.createIndexedStore, 'function');
+  });
+
   const consumer = `
     import db, { createStore, type Store } from 'opendb-store';
     import { where } from 'opendb-store/query';
     import { debug, inspect } from 'opendb-store/debug';
+    import { createIndexedStore, indexed } from 'opendb-store/indexeddb';
+    const idbValue: Promise<string> = indexed.get('k', 'default');
+    const idbStore = createIndexedStore({ namespace: 'n', database: 'd' });
+    const idbList: Promise<unknown[]> = where(idbStore, 'k', {});
+    const idbReport: Promise<number> = inspect(idbStore).then((r) => r.used);
+    void [idbValue, idbList, idbReport];
     debug(db);
     const percent: number = inspect(db.cookie).percentUsed;
     const store: Store = createStore({ namespace: 'x' });

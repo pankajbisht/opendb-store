@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`opendb-store` wraps `localStorage`, `sessionStorage`, and cookies with JSON serialization, key namespacing,
+`opendb-store` wraps `localStorage`, `sessionStorage`, cookies, and IndexedDB with JSON serialization, key namespacing,
 and per-entry expiry, with no runtime dependencies.
 
 ## Structure
@@ -19,6 +19,7 @@ and per-entry expiry, with no runtime dependencies.
 
  query.ts   separate entry: pick omit pluck where findWhere
  debug.ts   separate entry: inspect debug
+ indexeddb/ separate entry: indexed createIndexedStore (asynchronous)
 ```
 
 `src/` compiles to `dist/`: ESM (`opendb-esm.js`), CommonJS (`opendb.cjs`), a browser global
@@ -111,5 +112,28 @@ Writes and removals call `emit`, which tells subscribers in this tab on any stor
 Subscribers are grouped by key, so a write costs nothing for listeners on other keys. A single
 `storage` listener, added with the first subscriber, covers other tabs. Browsers do not fire that event for
 cookies.
+
+## IndexedDB
+
+IndexedDB is asynchronous, so it cannot implement the synchronous `StorageAdapter`. It has its own store in
+`src/indexeddb/`, reusing the key rules, entry validation, option checks, and error reporting.
+
+```text
+store.ts     operations, written against the Backend interface
+backend.ts   real IndexedDB, browser memory fallback, server no-op
+events.ts    subscribers, and BroadcastChannel for other tabs
+estimate.ts  approximate sizes
+```
+
+Records use the same `{ value, expire, v }` shape under the same raw keys, in one object store with an index on
+`expire`, which lets `purgeExpired` find expired entries without loading any values.
+
+Anything that reads and then writes runs inside one `readwrite` transaction. Otherwise two concurrent `patch` calls
+could lose an update, or an old expired read could delete a newer value. Callbacks passed to such a transaction,
+including `migrate`, must be synchronous, because a transaction closes when it has nothing left to wait for.
+
+Opening the database gives up after 5 seconds and falls back to memory, because some browsers can leave the
+request unanswered. A write resolves only after its transaction commits, because quota errors can appear at commit. Connections close on
+`versionchange`, so this library never blocks another tab upgrading or deleting the database.
 
 The reasoning behind these choices is in [PRODUCTION_PLAN.md](PRODUCTION_PLAN.md#3-decisions).

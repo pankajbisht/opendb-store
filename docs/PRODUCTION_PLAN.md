@@ -61,6 +61,7 @@ Phase 1 starts.
 | D6 | **Write the source in TypeScript** and generate declarations. | The hand-written types have already drifted from the code. Only about 400 live lines need porting. |
 | D7 | **Move `pick`, `omit`, `pluck`, `where`, `findWhere` to `opendb-store/query`, and debug tools to `opendb-store/debug`.** | They are optional; most production users should not pay for them. |
 | D8 | **Support cookies with the same API,** as `db.cookie`. (Reversed by the owner; the first plan dropped them.) | One API across storage types. Cookie limits are enforced and reported rather than hidden. |
+| D12 | **Add IndexedDB as `opendb-store/indexeddb`, with promise-returning methods.** (Added by the owner.) | It is asynchronous by nature. A separate entry keeps the core small and keeps `debug(db)` synchronous. |
 | D9 | **Keep zero runtime dependencies** and enforce it in CI. | It is the library's main selling point. |
 | D10 | **Keep Rollup; replace Jest with Vitest.** Remove Webpack and Babel. | Vitest runs TypeScript natively and has a real-browser mode. The Webpack configs are unused. |
 
@@ -121,7 +122,7 @@ compile under `bundler` and `nodenext`, and a plain import in Node without `wind
 - [x] Add a contract suite run against every adapter (local, session, memory).
 - [x] Run the suite in real Chromium, Firefox, and WebKit through Playwright.
 - [x] Enforce coverage of at least 95% lines and 90% branches.
-- [x] Add a bundle budget with `size-limit`: 3.8 kB gzipped for the core. (The first guess was 2 kB. The full API with cookies, subscriptions, migrations, and security hardening measures 3.79 kB, so the budget is 3.8 kB.)
+- [x] Add a bundle budget with `size-limit`: 3.9 kB gzipped for the core. (The first guess was 2 kB. The full API with cookies, subscriptions, migrations, and security hardening measures 3.79 kB, and a pre-release version string adds a few bytes, so the budget is 3.9 kB.)
 
 **Exit:** CI fails on a coverage drop, a size overrun, or a failure in any browser.
 
@@ -165,7 +166,7 @@ Each feature must fit inside the size budget. If one does not, it becomes a sepa
 
 ## 5. Definition of done
 
-- Zero runtime dependencies, and at most 3.8 kB gzipped for the core.
+- Zero runtime dependencies, and at most 3.9 kB gzipped for the core.
 - Importing in Node without `window` does not throw.
 - ESM, CJS, the browser global, and TypeScript all resolve, verified in CI.
 - Tests pass in Chromium, Firefox, and WebKit, with the coverage gate on.

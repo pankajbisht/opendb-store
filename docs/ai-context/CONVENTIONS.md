@@ -12,8 +12,9 @@
 8. Cookies use the same API as `db.cookie`, through `adapters/cookie.ts`.
 9. Zero runtime dependencies.
 10. Rollup and Vitest. No Webpack, Babel, or Jest.
-11. Core budget is 3.8 kB gzipped.
-12. Servers keep nothing. Never add shared memory for the no-`window` case: it leaks between requests.
+11. Core budget is 3.9 kB gzipped. Keep headroom: `3.0.0-next.1` is longer than `3.0.0`, and the check runs at publish.
+12. IndexedDB is `opendb-store/indexeddb`, asynchronous, never added to the core `db` object.
+13. Servers keep nothing. Never add shared memory for the no-`window` case: it leaks between requests.
 
 ## Code rules
 
@@ -49,4 +50,6 @@ npx vitest run -t "name"    # one test
 - The UMD global relies on named exports, so `db.local` must stay a named export.
 - `vi.spyOn` on both the getter and setter of `document.cookie` leaves a mock behind; use `Object.defineProperty`.
 - New stores write a probe cookie first, so check `lastCall` when spying on `document.cookie`.
+- In `src/indexeddb/`, read-then-write must stay inside one transaction, and updater callbacks must be synchronous.
+- Playwright browsers are private, so WebKit refuses `Blob` in IndexedDB there. A persistent profile accepts it.
 - The window check in `adapters/web.ts` is deliberate: recent Node versions define their own `localStorage`.

@@ -1,6 +1,6 @@
 # opendb-store
 
-**One small, typed API for `localStorage`, `sessionStorage`, and cookies.** Namespaces, expiry, cross-tab
+**One small, typed API for `localStorage`, `sessionStorage`, cookies, and IndexedDB.** Namespaces, expiry, cross-tab
 updates, schema migrations, and a storage size inspector, with no dependencies.
 
 [![npm](https://img.shields.io/npm/v/opendb-store)](https://www.npmjs.com/package/opendb-store)
@@ -29,8 +29,8 @@ db.session.set('checkoutStep', 2);
 | A different cookie API, with manual encoding | The same API for cookies |
 | No idea how much space is left | `debug(db)` shows usage per key |
 
-The core is under 4 kB gzipped. Query helpers and the debug tool are separate imports, so they cost
-nothing unless you use them.
+The core is under 4 kB gzipped. IndexedDB, query helpers, and the debug tool are separate imports, so they
+cost nothing unless you use them.
 
 ## Install
 
@@ -125,6 +125,24 @@ const shared = createStore({
   cookie: { domain: '.acme.com', sameSite: 'Lax', secure: true },
   defaultTTL: ONE_YEAR,
 });
+```
+
+### Store large or binary data with IndexedDB
+
+`localStorage` holds about 5 MB of text. IndexedDB holds far more, and keeps real objects such as `Date`, `Map`,
+`ArrayBuffer`, and `Blob`. It has the same methods and options as the other stores, but each returns a promise.
+
+```js
+import { indexed, createIndexedStore } from 'opendb-store/indexeddb';
+
+await indexed.set('report', { generated: new Date(), rows }, { expire: 86_400_000 });
+const report = await indexed.get('report'); // report.generated is still a Date
+
+const files = createIndexedStore({ namespace: 'files' });
+await files.set('avatar', imageBlob);
+
+// Safe under concurrency: every patch is applied.
+await Promise.all([files.patch('meta', { a: 1 }), files.patch('meta', { b: 2 })]);
 ```
 
 ### Keep each user's data separate, and clear it on logout
@@ -234,6 +252,7 @@ debug(db.local);
 ```
 
 - `debug(db)` reports local, session, and cookies together.
+- `await debug(indexed)` and `await inspect(indexed)` work for IndexedDB too.
 - `debug(store, { warnAt: 70 })` warns when the origin is 70% full. The default is 80.
 - `inspect(store)` returns the same figures without printing, for your own dashboard or alert.
 
@@ -273,6 +292,8 @@ const store = createStore({ namespace: 'myapp' });
 | `serializer` | JSON | `{ serialize, deserialize }`, for example to encrypt |
 | `onError` | `console.warn` | Receives each failure |
 
+`createIndexedStore` takes the same options, except `storage` and `cookie`, and adds `database`.
+
 ### Methods
 
 | Method | Returns | Description |
@@ -296,6 +317,8 @@ const store = createStore({ namespace: 'myapp' });
 | `from(namespace)` | store | A separate store in another namespace |
 
 Pass `{ format: 'KB', unit: true }` to size methods to get text like `"12.40 KB"`.
+
+IndexedDB stores have the same methods, each returning a promise that never rejects. Use `await store.count`.
 
 ### Error codes
 
@@ -322,7 +345,16 @@ Pass `{ format: 'KB', unit: true }` to size methods to get text like `"12.40 KB"
 - JavaScript cannot create `HttpOnly` cookies. Authentication sessions should be set by your server.
 - `subscribe` sees cookie changes from the current tab only.
 
-**Values** use JSON by default, so `Date` becomes a string and `Map` and `Set` do not survive.
+**IndexedDB**
+
+- Every method is asynchronous, unlike the other stores.
+- Other tabs are told about changes through `BroadcastChannel`.
+- Sizes are estimates, because browsers do not report the size of one value. `capacity` and `free` come from the
+  browser's own figures.
+- Safari cannot store a `Blob` in private browsing. `set` returns `false`; an `ArrayBuffer` works instead.
+- Compare errors with `error.code`. Each entry point has its own `StoreError` class.
+
+**Values** in the other stores use JSON by default, so `Date` becomes a string and `Map` and `Set` do not survive.
 
 **Server rendering:** without a browser there is no storage. Reads return your defaults and writes return
 `false`, so one visitor's data can never reach another. For Node scripts and tests, use
@@ -342,9 +374,9 @@ const theme = db.local.get('theme', 'light'); // string
 
 ## Try the examples
 
-The repository has 11 small working examples, each in its own folder under
+The repository has 12 small working examples, each in its own folder under
 [`public/examples/`](public/README.md): theme sync, API caching, form autosave, cookie consent, a shopping cart,
-schema migration, error handling, a storage size debugger, and more.
+schema migration, error handling, IndexedDB, a storage size debugger, and more.
 
 ```sh
 npm install

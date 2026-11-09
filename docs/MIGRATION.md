@@ -39,6 +39,7 @@ are still found.
 ## Newly working
 
 - Cookies, with the same API as `local` and `session`, as `db.cookie`.
+- IndexedDB, from `opendb-store/indexeddb`, with the same methods returning promises.
 - Import in Node and SSR no longer throws.
 - `require('opendb-store')` returns the library.
 - TypeScript resolves the types under `bundler` and `nodenext`.

@@ -1,9 +1,8 @@
 import { isValidCookieOptions } from './adapters/cookie';
 import { resolveWebStorage } from './adapters/web';
-import { isValidTTL, jsonSerializer } from './codec/entry';
+import { jsonSerializer } from './codec/entry';
 import { createKeyCodec } from './codec/key';
 import type { Context } from './context';
-import { StoreError } from './errors';
 import { get } from './operations/get';
 import { has } from './operations/has';
 import { entries, keyAt, keys, values } from './operations/keys';
@@ -13,15 +12,8 @@ import { purgeExpired } from './operations/internal';
 import { set } from './operations/set';
 import { capacity, free, size, ttl, used } from './operations/size';
 import { subscribe } from './operations/subscribe';
+import { assertCommonOptions, assertOption, createReporter } from './options';
 import type { StorageAdapter, Store, StoreOptions } from './types';
-
-function assertOption(valid: boolean, name: string): void {
-  if (!valid) throw new TypeError(`Invalid option: ${name}`);
-}
-
-function isNonEmptyString(value: unknown): boolean {
-  return typeof value === 'string' && value !== '';
-}
 
 function isStorageOption(storage: StoreOptions['storage']): boolean {
   return (
@@ -45,35 +37,11 @@ export function createStore(options: StoreOptions = {}): Store {
     onError,
   } = options;
 
-  assertOption(isNonEmptyString(separator), 'separator');
-  assertOption(
-    isNonEmptyString(namespace) && !namespace.includes(separator),
-    'namespace'
-  );
+  assertCommonOptions(namespace, separator, defaultTTL, version, migrate);
   assertOption(isStorageOption(storage), 'storage');
   assertOption(!cookie || isValidCookieOptions(cookie), 'cookie');
-  assertOption(
-    defaultTTL === undefined || isValidTTL(defaultTTL),
-    'defaultTTL'
-  );
-  assertOption(
-    version === undefined || (Number.isInteger(version) && version > 0),
-    'version'
-  );
-  assertOption(!migrate || version !== undefined, 'migrate needs version');
 
-  const report: Context['report'] = (code, message, key, cause) => {
-    const error = new StoreError(code, message, key, cause);
-
-    // A faulty handler must not turn a reported failure into a thrown one.
-    try {
-      // A fixed first argument stops keys being read as console format codes.
-      if (onError) onError(error);
-      else console.warn('[opendb-store]', `${code}: ${message}`);
-    } catch {
-      // Nothing further can be done with the failure.
-    }
-  };
+  const report = createReporter(onError);
 
   let resolved: StorageAdapter | undefined;
   const adapter = (): StorageAdapter => {
