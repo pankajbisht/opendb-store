@@ -49,7 +49,17 @@ export default [
       { ...base, file: 'dist/debug-umd.js', format: 'umd', name: 'dbDebug' },
     ],
   },
+  {
+    input: 'src/indexeddb/index.ts',
+    plugins: [compile()],
+    output: [
+      { ...base, file: 'dist/indexeddb.js', format: 'es' },
+      { ...base, file: 'dist/indexeddb.cjs', format: 'cjs' },
+      { ...base, file: 'dist/indexeddb-umd.js', format: 'umd', name: 'dbIndexed' },
+    ],
+  },
   declarations('src/index.ts', 'index'),
   declarations('src/query.ts', 'query'),
   declarations('src/debug.ts', 'debug'),
+  declarations('src/indexeddb/index.ts', 'indexeddb'),
 ];

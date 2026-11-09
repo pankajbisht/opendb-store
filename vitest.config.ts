@@ -26,6 +26,7 @@ export default defineConfig({
             'tests/compat.test.ts',
             'tests/query.test.ts',
             'tests/migrate.test.ts',
+            'tests/indexeddb.test.ts',
             'tests/browser/*.test.ts',
           ],
           browser: {
