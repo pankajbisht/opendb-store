@@ -1,14 +1,5 @@
-# Node.js modules
 node_modules/
-
-# Build output
 coverage/
-
-# file
+dist/
 jest-report.html
-
-# NPM package-lock file
-package-lock.json
-
-# DS_Store
 .DS_Store

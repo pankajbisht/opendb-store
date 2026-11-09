@@ -1,13 +1,10 @@
 {
-  "branches": ["master"],
+  "branches": ["master", { "name": "next", "prerelease": true }],
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    ["@semantic-release/npm", {
-      "npmPublish": true,
-      "tarballDir": "dist"
-    }],
+    "@semantic-release/npm",
     "@semantic-release/git",
     "@semantic-release/github"
   ]

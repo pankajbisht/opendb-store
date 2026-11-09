@@ -1,3 +1,11 @@
+## 2.0.1 (2026-02-08)
+
+Published to npm directly, so no notes were generated at the time. See git history.
+
+# 2.0.0 (2026-02-07)
+
+Published to npm directly, so no notes were generated at the time. See git history.
+
 # [1.5.0](https://github.com/pankajbisht/opendb-store/compare/v1.4.0...v1.5.0) (2026-02-08)
 
 

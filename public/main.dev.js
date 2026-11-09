@@ -2,6 +2,7 @@ import db from "../dist/opendb-esm.min.js"
 
 // Set an item for testing:
 db.local.set('myKey', { name: 'Alice', age: 30 });
+console.log(db.local.get('myKey'));
 
 // Get the size of the value for a specific key:
 console.log(db.local.size('myKey')); // e.g., 105 (raw bytes)
@@ -28,7 +29,22 @@ console.log(db.local.size('largeObj', { format: 'mb', unit: true })); // e.g., "
 console.log(db.local.free()); // raw bytes
 console.log(db.local.free({ format: 'mb', unit: true })); // e.g., "4.95 MB"
 
-
 console.log(db.local.capacity()); // raw bytes
 console.log(db.local.capacity({ format: 'mb', unit: true })); // e.g., "5.00 MB"
 console.log(db.session.free({ format: 'mb', unit: true })); // e.g., "5.00 MB"
+
+//console.log(db.local.entries());
+
+db.local.set("pokemon", { id: 25, name: "Pikachu", level: 12 })
+
+var stooges = [{name: 'moe', age: 40}, {name: 'larry', age: 50}, {name: 'curly', age: 60}];
+
+db.local.set("storage", stooges);
+
+// console.log(db.local.entries());
+// console.log(db.local.findWhere('storage', { age: 40 }));
+// console.log(db.local.where('storage', { age: 40 }));
+// console.log(db.local.pick('pokemon', ['id']))
+
+
+//console.log(db.local.findWhere({ age: 40 }));
