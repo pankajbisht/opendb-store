@@ -19,6 +19,7 @@ with the default namespace (`app`) and separator (`.`). A test using exact 2.0.1
 | `used()` | Whole origin | This namespace | Use `free()` for origin-wide room |
 | `size()`, `used()`, `free()` numbers | UTF-8 of the value alone | UTF-16 length of key and stored text | Expect slightly different numbers |
 | Namespace containing the separator | Allowed | Throws `TypeError` | Use a different separator |
+| Running without a `window` | Crashed on import | Reads return defaults; writes return `false` | Use `createMemoryAdapter()` for Node scripts and tests |
 
 ## API changes
 

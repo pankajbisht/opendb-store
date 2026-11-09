@@ -68,7 +68,8 @@
     "check:package": "npm run build && publint --strict && attw --pack . --profile node16 && size-limit && node scripts/smoke.mjs",
     "semantic-release": "semantic-release",
     "prepublishOnly": "npm run check:package",
-    "minify-debug": "terser dist/debug-umd.js -o dist/debug-umd.min.js --compress passes=2 --mangle --ecma 2020"
+    "minify-debug": "terser dist/debug-umd.js -o dist/debug-umd.min.js --compress passes=2 --mangle --ecma 2020",
+    "demo": "npm run build && node scripts/serve.mjs"
   },
   "repository": {
     "type": "git",
@@ -158,7 +159,7 @@
     {
       "name": "core",
       "path": "dist/opendb-esm.min.js",
-      "limit": "3.5 kB",
+      "limit": "3.8 kB",
       "gzip": true
     }
   ]

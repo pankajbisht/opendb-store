@@ -98,3 +98,44 @@ IDs 10, 11, and 12 are intentionally unused; those items are tracked as `PKG-01`
 | DOC-01 | P1 | PUB | Read | `README.md`, `package.json` | Advertises cookie support, which does not exist. |
 | DOC-02 | P2 | PUB | Read | `README.md` | Pins the CDN example to 1.1.0, and most methods and all namespace usage are undocumented. |
 | DOC-03 | P2 | PUB | Read | Repository root | No `CONTRIBUTING`, no security policy, no guidance on what is unsafe to store. |
+
+## Performance and security review (2026-11-09, `refactor/v3`)
+
+All items below are fixed, each with a regression test in `tests/security.test.ts` or `tests/ssr.test.ts`.
+
+### Security
+
+| Severity | Issue | Confirmed by | Fix |
+| --- | --- | --- | --- |
+| High | Without a `window`, data was kept in process-wide memory, so one server request could read another's | Ran | Servers keep nothing; memory is opt-in |
+| High | `cookie.path`, `domain`, and `sameSite` could inject extra attributes | Ran | Rejected by `createStore` |
+| Medium | A cookie named `app%2Ekey` could pose as `app.key` | Ran | Names must match this library's own encoding |
+| Medium | `pick` with `__proto__` set the prototype of its result from stored data | Ran | Plain properties only |
+| Low | A very long `expire` produced an invalid `Max-Age`, so the cookie silently became a session cookie | Ran | Capped at the 400-day browser limit |
+| Low | Non-numeric `expire` and `v` from edited storage were used | Ran | Ignored when decoding |
+| Low | `pluck` and `where` read inherited fields such as `constructor` | Ran | Own fields only |
+| Low | Stored keys reached `console.warn` as format strings | Read | Fixed first argument |
+| Low | A throwing `onError`, or storage failing while listing, escaped as an exception despite the no-throw guarantee | Ran | Contained and reported |
+| Hardening | The release job ran dependency install scripts next to the publish credentials, with a restorable cache and persisted git credentials | Read | `--ignore-scripts`, no release cache, `persist-credentials: false` |
+
+Not applicable: global prototype pollution through `get` and `patch` was tested and does not occur. The library
+has no HTML output and no runtime dependencies. The 44 remaining `npm audit` findings are moderate and in
+development tools; none ship to users.
+
+### Performance
+
+Measured in Chromium (Firefox and WebKit moved in the same direction). `get`, `set`, and `has` were already within
+about 1 microsecond of the native calls and did not change.
+
+| Case | Before | After | Fix |
+| --- | --- | --- | --- |
+| `keys()` with 120 cookies | 18.4 ms | 1.4 ms | Reuse parsing while the cookie text is unchanged |
+| `cookie.get` with 120 cookies | 52.6 us | 6.2 us | Same |
+| `keys()` with 20,000 memory entries | 602 ms | 7.5 ms | Key order built once, not per index |
+| `set` with 4,000 subscribers on other keys | 35.1 us | 5.6 us | Subscribers grouped by key |
+| New store's first read | 13.1 us | 1.7 us | Real storage probed once per page |
+| Listener writing its own key | 1,151 nested calls | 1 call | Re-entrancy guard |
+
+Each store reads and parses on every `get`, by design. Repeated reads of very large values cost about 0.1 to 1 ms
+per megabyte, so hold large results in a variable rather than re-reading them in a loop.
+

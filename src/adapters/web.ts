@@ -10,6 +10,20 @@ const fallbacks: Partial<Record<StorageKind, StorageAdapter>> = {};
 // One shared instance, so same-tab subscribers match across cookie stores.
 let defaultCookies: StorageAdapter | undefined;
 
+// Each real storage is probed once, so extra stores cause no writes.
+const verified = new WeakSet<object>();
+
+// Servers keep nothing: shared memory would leak data between requests.
+const serverStorage: StorageAdapter = {
+  length: 0,
+  key: () => null,
+  getItem: () => null,
+  setItem() {
+    throw new Error('No storage on the server');
+  },
+  removeItem() {},
+};
+
 export function isQuotaError(error: unknown): boolean {
   const { name, code } = (error ?? {}) as { name?: string; code?: number };
   return (
@@ -46,12 +60,15 @@ export function resolveWebStorage(
   cookie: CookieOptions | undefined,
   onUnavailable: () => void
 ): StorageAdapter {
-  // A server has no storage by design, so this case is not reported.
-  if (typeof window === 'undefined') return fallback(kind);
+  if (typeof window === 'undefined') return serverStorage;
 
   try {
     const storage = lookup(kind, cookie);
-    if (storage && isWritable(storage)) return storage;
+    if (storage && (verified.has(storage) || isWritable(storage))) {
+      // Cookies can be blocked per write, so they are checked for each store.
+      if (kind !== 'cookie') verified.add(storage);
+      return storage;
+    }
   } catch {
     // Reading the property throws when storage is blocked.
   }

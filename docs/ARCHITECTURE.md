@@ -62,10 +62,13 @@ interface Context {
 
 ## Adapter resolution
 
-1. If there is no `window`, use memory silently. This is the server case.
+1. If there is no `window`, use an adapter that keeps nothing. Shared server memory would leak data between
+   requests.
 2. Get `localStorage`, `sessionStorage`, or the cookie adapter inside `try/catch`, then write and remove a probe
    key.
-3. On failure, use memory and report `STORAGE_UNAVAILABLE` once.
+3. On failure, use memory and report `STORAGE_UNAVAILABLE` once. A browser tab has one user, so this is safe.
+
+Real `localStorage` and `sessionStorage` objects are probed once per page, however many stores use them.
 
 A quota error during the probe still means storage exists, so it does not trigger the fallback. Node's own
 `localStorage` global is deliberately ignored, because the check is for `window`.
@@ -99,9 +102,13 @@ The cookie adapter implements the same `StorageAdapter` interface, so every oper
 three things: `setItem` receives the expiry and sets `Max-Age`; writes are read back, because browsers drop bad
 cookies silently; and `measure` and `capacity` report encoded bytes and the RFC 6265 minimums.
 
+Parsing `document.cookie` is reused while its text is unchanged. The text is read on every call, so the browser
+stays the source of truth.
+
 ## Change notification
 
-Writes and removals call `emit`, which tells subscribers in this tab on any store sharing the adapter. A single
+Writes and removals call `emit`, which tells subscribers in this tab on any store sharing the adapter.
+Subscribers are grouped by key, so a write costs nothing for listeners on other keys. A single
 `storage` listener, added with the first subscriber, covers other tabs. Browsers do not fire that event for
 cookies.
 

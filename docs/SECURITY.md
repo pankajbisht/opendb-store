@@ -25,6 +25,10 @@ Expiry is enforced by the library only; the data stays readable until it is remo
 Users, browser extensions, and other scripts can change stored values. Validate anything you read before
 using it for authorization or rendering it as HTML.
 
+The library protects itself against tampered data: non-numeric expiry and version fields are ignored, stored
+`__proto__` keys cannot change an object's prototype, and query helpers read own fields only. It cannot tell
+you whether a well-formed value is genuine.
+
 ## Namespaces are not a security boundary
 
 A namespace prevents accidental collisions. It does not stop other code on the same origin from reading
@@ -32,8 +36,11 @@ or changing your keys.
 
 ## On a server
 
-Without a `window`, stores keep data in memory shared by the whole Node process. In server-side code, do
-not write anything specific to a user or request, because other requests can read it.
+Without a `window`, stores keep nothing. Reads return defaults, and writes return `false`, so data from one
+request cannot reach another.
+
+If you pass `createMemoryAdapter()` yourself, that memory lives as long as the store. Do not share such a store
+between requests.
 
 ## Reporting a vulnerability
 

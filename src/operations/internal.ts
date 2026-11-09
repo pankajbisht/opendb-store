@@ -15,12 +15,17 @@ export function requireKey(ctx: Context, key: unknown): string | undefined {
 
 /** Every raw key in storage, in any namespace. Copied so callers can remove while looping. */
 export function allRawKeys(ctx: Context): string[] {
-  const storage = ctx.adapter();
   const keys: string[] = [];
 
-  for (let index = 0; index < storage.length; index++) {
-    const key = storage.key(index);
-    if (key !== null) keys.push(key);
+  try {
+    const storage = ctx.adapter();
+
+    for (let index = 0, total = storage.length; index < total; index++) {
+      const key = storage.key(index);
+      if (key !== null) keys.push(key);
+    }
+  } catch (error) {
+    ctx.report('STORAGE_UNAVAILABLE', 'Failed to list keys', undefined, error);
   }
 
   return keys;
@@ -31,12 +36,16 @@ export function rawKeys(ctx: Context): string[] {
 }
 
 export function rawLength(ctx: Context, rawKey: string): number {
-  const storage = ctx.adapter();
-  const value = storage.getItem(rawKey) ?? '';
+  try {
+    const storage = ctx.adapter();
+    const value = storage.getItem(rawKey) ?? '';
 
-  return storage.measure
-    ? storage.measure(rawKey, value)
-    : rawKey.length + value.length;
+    return storage.measure
+      ? storage.measure(rawKey, value)
+      : rawKey.length + value.length;
+  } catch {
+    return 0;
+  }
 }
 
 export function removeRaw(ctx: Context, rawKey: string): void {

@@ -12,7 +12,8 @@
 8. Cookies use the same API as `db.cookie`, through `adapters/cookie.ts`.
 9. Zero runtime dependencies.
 10. Rollup and Vitest. No Webpack, Babel, or Jest.
-11. Core budget is 3.5 kB gzipped.
+11. Core budget is 3.8 kB gzipped.
+12. Servers keep nothing. Never add shared memory for the no-`window` case: it leaks between requests.
 
 ## Code rules
 
@@ -31,6 +32,7 @@
 npm test                    # lint + typecheck + unit + coverage gate
 npm run test:browser        # Chromium, Firefox, WebKit
 npm run check:package       # build + publint + attw + size + smoke
+npm run demo                # build and serve the examples
 npx vitest run -t "name"    # one test
 ```
 

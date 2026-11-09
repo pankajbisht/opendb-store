@@ -1,3 +1,4 @@
+import { isValidCookieOptions } from './adapters/cookie';
 import { resolveWebStorage } from './adapters/web';
 import { isValidTTL, jsonSerializer } from './codec/entry';
 import { createKeyCodec } from './codec/key';
@@ -50,6 +51,7 @@ export function createStore(options: StoreOptions = {}): Store {
     'namespace'
   );
   assertOption(isStorageOption(storage), 'storage');
+  assertOption(!cookie || isValidCookieOptions(cookie), 'cookie');
   assertOption(
     defaultTTL === undefined || isValidTTL(defaultTTL),
     'defaultTTL'
@@ -62,8 +64,15 @@ export function createStore(options: StoreOptions = {}): Store {
 
   const report: Context['report'] = (code, message, key, cause) => {
     const error = new StoreError(code, message, key, cause);
-    if (onError) onError(error);
-    else console.warn(`[opendb-store] ${code}: ${message}`);
+
+    // A faulty handler must not turn a reported failure into a thrown one.
+    try {
+      // A fixed first argument stops keys being read as console format codes.
+      if (onError) onError(error);
+      else console.warn('[opendb-store]', `${code}: ${message}`);
+    } catch {
+      // Nothing further can be done with the failure.
+    }
   };
 
   let resolved: StorageAdapter | undefined;

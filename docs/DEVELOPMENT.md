@@ -19,12 +19,13 @@ npx playwright install chromium firefox webkit   # only for browser tests
 | `npm run lint`, `npm run lint:fix` | ESLint on `src`, `tests`, and `scripts` |
 | `npm run format` | Prettier on the repository |
 | `npm run build` | Clean, compile to `dist/`, minify |
+| `npm run demo` | Build, then serve the examples in `public/` |
 | `npm run check:package` | Build, `publint`, type resolution, size budget, consumer smoke tests |
 
 Things to know:
 
 - Tests import `src/`, so no build is needed to run them.
-- `dist/` is generated and not tracked. The demo in `public/` needs a build first.
+- `dist/` is generated and not tracked. `npm run demo` builds it for the examples.
 - `src/version.ts` is generated from `package.json` during the build.
 - The pre-commit hook runs lint-staged. The pre-push hook runs `npm test`.
 
@@ -36,18 +37,19 @@ Things to know:
 | `tests/expiry.test.ts` | Expiry boundaries, using fake timers |
 | `tests/compat.test.ts` | Reading exact 2.0.1 payloads. Do not weaken this |
 | `tests/failures.test.ts` | Quota, corrupt data, blocked storage, option validation |
-| `tests/ssr.test.ts` | Running without a `window` |
+| `tests/ssr.test.ts` | Running without a `window`, including that nothing is retained |
 | `tests/query.test.ts` | Query helpers |
 | `tests/cookie.test.ts` | Cookie encoding, attributes, and limits |
 | `tests/events.test.ts` | Subscriptions and purging |
 | `tests/migrate.test.ts` | Schema migrations |
 | `tests/debug.test.ts` | The debug tools |
+| `tests/security.test.ts` | Injection, tampered data, failure containment, and efficiency guards |
 | `tests/browser/` | Real quota, real cookies, and real cross-document events |
 
 ## Limits enforced by tooling
 
 - Coverage: at least 95% of lines, statements, and functions, and 90% of branches.
-- Size: 3.5 kB gzipped for `dist/opendb-esm.min.js`.
+- Size: 3.8 kB gzipped for `dist/opendb-esm.min.js`.
 - `dependencies` in `package.json` must be empty; `scripts/smoke.mjs` checks this.
 
 ## Commits and releases

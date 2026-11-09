@@ -1,6 +1,7 @@
 import { createStore } from './store';
 
 export { createStore } from './store';
+export { createMemoryAdapter } from './adapters/memory';
 export { StoreError, type StoreErrorCode } from './errors';
 export { version } from './version';
 export type {

@@ -1,6 +1,18 @@
 // @vitest-environment node
-import { expect, test, vi } from 'vitest';
-import db, { createStore, local, session, version } from '../src/index';
+import { afterEach, expect, test, vi } from 'vitest';
+import { inspect } from '../src/debug';
+import db, {
+  cookie,
+  createMemoryAdapter,
+  createStore,
+  local,
+  session,
+  version,
+} from '../src/index';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 test('there is no window in this environment', () => {
   expect(typeof window).toBe('undefined');
@@ -9,54 +21,63 @@ test('there is no window in this environment', () => {
 test('the package imports and exposes its API without a window', () => {
   expect(db.local).toBe(local);
   expect(db.session).toBe(session);
+  expect(db.cookie).toBe(cookie);
   expect(typeof version).toBe('string');
 });
 
-test('operations work against memory, without warnings', () => {
+test('reads return defaults, without warnings', () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const store = createStore({ namespace: 'ssr' });
 
-  expect(store.set('k', 1)).toBe(true);
-  expect(store.get('k')).toBe(1);
-  expect(store.keys()).toEqual(['k']);
-  store.clear();
+  expect(store.get('k')).toBeNull();
+  expect(store.get('k', 'fallback')).toBe('fallback');
+  expect(store.has('k')).toBe(false);
+  expect(store.keys()).toEqual([]);
   expect(store.count).toBe(0);
+  expect(store.ttl('k')).toBeNull();
+  expect(store.used()).toBe(0);
+  expect(store.remove('k')).toBeNull();
+  expect(() => store.clear()).not.toThrow();
+  expect(store.purgeExpired()).toBe(0);
 
   expect(warn).not.toHaveBeenCalled();
-  warn.mockRestore();
 });
 
-test('local and session do not share memory', () => {
-  const a = createStore({ namespace: 'iso', storage: 'local' });
-  const b = createStore({ namespace: 'iso', storage: 'session' });
+test.each([
+  ['local', local],
+  ['session', session],
+  ['cookie', cookie],
+])('%s keeps nothing between server requests', (_name, store) => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-  a.set('k', 1);
-  expect(b.has('k')).toBe(false);
-  a.clear();
+  expect(store.set('profile', { email: 'alice@example.com' })).toBe(false);
+  expect(store.get('profile')).toBeNull();
+  expect(inspect(store).count).toBe(0);
 });
 
-test('cookies and debug work without a window', async () => {
-  const { cookie } = await import('../src/index');
-  const { inspect } = await import('../src/debug');
-  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+test('a write on the server is reported', () => {
+  const codes: string[] = [];
+  const store = createStore({ onError: (e) => codes.push(e.code) });
 
-  expect(cookie.set('k', 1)).toBe(true);
-  expect(cookie.get('k')).toBe(1);
-  expect(inspect(cookie).count).toBe(1);
-  cookie.clear();
+  store.set('k', 1);
 
-  expect(warn).not.toHaveBeenCalled();
-  warn.mockRestore();
+  expect(codes).toEqual(['STORAGE_UNAVAILABLE']);
 });
 
-test('subscribe works without a window', () => {
-  const store = createStore({ namespace: 'sub' });
-  const seen: unknown[] = [];
-  const stop = store.subscribe('k', (value) => seen.push(value));
+test('subscribers are not called for a discarded write', () => {
+  const store = createStore({ namespace: 'sub', onError: () => {} });
+  const listener = vi.fn();
+  const stop = store.subscribe('k', listener);
 
   store.set('k', 1);
   stop();
-  store.clear();
 
-  expect(seen).toEqual([1]);
+  expect(listener).not.toHaveBeenCalled();
+});
+
+test('memory can be chosen explicitly, for tests and scripts', () => {
+  const store = createStore({ storage: createMemoryAdapter() });
+
+  expect(store.set('k', 1)).toBe(true);
+  expect(store.get('k')).toBe(1);
 });

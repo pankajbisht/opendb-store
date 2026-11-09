@@ -24,12 +24,12 @@ db.session.set('checkoutStep', 2);
 | Strings only; `JSON.parse` everywhere | Objects, arrays, and numbers just work |
 | No expiry | `{ expire: ms }` on any value, in every storage type |
 | Keys collide with other scripts | Every key is namespaced; `clear()` only touches yours |
-| Crashes during server rendering | Safe to import and call anywhere |
+| Crashes during server rendering | Safe to import and call anywhere; nothing is kept on the server |
 | Throws when full, or when storage is blocked | Returns `false` and tells you why |
 | A different cookie API, with manual encoding | The same API for cookies |
 | No idea how much space is left | `debug(db)` shows usage per key |
 
-The core is about 3.5 kB gzipped. Query helpers and the debug tool are separate imports, so they cost
+The core is under 4 kB gzipped. Query helpers and the debug tool are separate imports, so they cost
 nothing unless you use them.
 
 ## Install
@@ -324,8 +324,9 @@ Pass `{ format: 'KB', unit: true }` to size methods to get text like `"12.40 KB"
 
 **Values** use JSON by default, so `Date` becomes a string and `Map` and `Set` do not survive.
 
-**Server rendering:** without a browser, stores use process-wide memory. Do not write per-user data on the
-server, because other requests could read it.
+**Server rendering:** without a browser there is no storage. Reads return your defaults and writes return
+`false`, so one visitor's data can never reach another. For Node scripts and tests, use
+`createStore({ storage: createMemoryAdapter() })`.
 
 **Security:** anything in browser storage is readable by any script on your page. Do not store passwords,
 tokens, or sensitive personal data. See [docs/SECURITY.md](docs/SECURITY.md).
@@ -337,6 +338,17 @@ tokens, or sensitive personal data. See [docs/SECURITY.md](docs/SECURITY.md).
 ```ts
 const user = db.local.get<User>('user'); // User | null
 const theme = db.local.get('theme', 'light'); // string
+```
+
+## Try the examples
+
+The repository has 11 small working examples, each in its own folder under
+[`public/examples/`](public/README.md): theme sync, API caching, form autosave, cookie consent, a shopping cart,
+schema migration, error handling, a storage size debugger, and more.
+
+```sh
+npm install
+npm run demo
 ```
 
 ## Documentation

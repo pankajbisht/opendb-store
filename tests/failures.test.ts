@@ -86,7 +86,10 @@ describe('write failures', () => {
   test('failures go to console.warn when there is no onError', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     createStore({ storage: createMemoryAdapter() }).set('' as never, 1);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('INVALID_KEY'));
+    expect(warn).toHaveBeenCalledWith(
+      '[opendb-store]',
+      expect.stringContaining('INVALID_KEY')
+    );
     warn.mockRestore();
   });
 });

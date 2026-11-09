@@ -26,11 +26,17 @@ export function decodeEntry(
   raw: string
 ): Entry | undefined {
   const data = serializer.deserialize(raw);
-  return isEntry(data) ? data : undefined;
+  if (!isEntry(data)) return undefined;
+
+  // Stored data can be edited, so metadata must be a number to be trusted.
+  if (!Number.isFinite(data.expire)) delete data.expire;
+  if (!Number.isFinite(data.v)) delete data.v;
+
+  return data;
 }
 
 export function isExpired(entry: Entry): boolean {
-  return typeof entry.expire === 'number' && Date.now() > entry.expire;
+  return entry.expire !== undefined && Date.now() > entry.expire;
 }
 
 export function isValidTTL(ttl: unknown): ttl is number {

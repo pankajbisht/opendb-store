@@ -19,7 +19,8 @@ CommonJS and script tags expose the same names: `require('opendb-store').local` 
 | `serializer` | JSON | `{ serialize, deserialize }`; receives the whole entry |
 | `onError` | `console.warn` | Receives every failure as a `StoreError` |
 
-Invalid options throw `TypeError` immediately. Nothing else throws.
+Invalid options, including `cookie` attributes containing `;` or control characters, throw `TypeError`
+immediately. Nothing else throws, even if `onError` itself does.
 
 ## Store members
 
@@ -63,6 +64,7 @@ expired entries as it goes.
 | Other tabs | Yes | No, sessions are per tab | No |
 
 Stored migrations triggered by reads do not notify. Expiry notifies when the entry is discovered to be gone.
+A listener is not called again for a change it makes to its own key while running.
 
 ## Rules
 
@@ -77,7 +79,8 @@ Stored migrations triggered by reads do not notify. Expiry notifies when the ent
 
 - Attributes default to `Path=/`, `SameSite=Lax`, and `Secure` on HTTPS.
 - Keys and values are percent-encoded. A value over 4096 encoded bytes returns `QUOTA_EXCEEDED`.
-- `expire` sets a browser `Max-Age` as well as the library's own check.
+- `expire` sets a browser `Max-Age` as well as the library's own check. Browsers cap this at 400 days, so
+  a cookie can end sooner than a longer `expire`.
 - Without `expire` or `defaultTTL`, a cookie lasts until the browser closes.
 - A write is read back, so a cookie the browser rejects returns `false`.
 - `HttpOnly` is not possible from JavaScript, and `HttpOnly` cookies are invisible to this library.
@@ -104,7 +107,7 @@ default, and the stored data is kept. Stores without `version` write the plain 2
 | `QUOTA_EXCEEDED` | Storage is full, or a cookie is over 4 KB |
 | `SERIALIZE_FAILED` | The value cannot be serialized |
 | `CORRUPT_VALUE` | `get` found a value it cannot decode |
-| `STORAGE_UNAVAILABLE` | Storage is blocked and memory is in use, or a storage call failed |
+| `STORAGE_UNAVAILABLE` | Storage is blocked and memory is in use, a storage call failed, or a write happened on a server |
 | `INVALID_KEY` | `set`, `patch`, `remove`, or `subscribe` got an invalid key |
 | `INVALID_ARGUMENT` | A bad `expire`, an unknown option, or a `patch` on a non-object |
 | `MIGRATION_FAILED` | `migrate` threw |
@@ -147,8 +150,11 @@ An adapter needs `length`, `key`, `getItem`, `setItem`, and `removeItem`. Option
 
 ## Server-side rendering
 
-Importing and calling the library without a `window` is safe. Data goes to process-wide memory, so read
-[SECURITY.md](SECURITY.md#on-a-server) before writing anything on the server.
+Importing and calling the library without a `window` is safe. Nothing is stored: reads return defaults, and
+writes return `false` and report `STORAGE_UNAVAILABLE`. This stops one request's data reaching another. See
+[SECURITY.md](SECURITY.md#on-a-server).
+
+For Node scripts and tests, use `createStore({ storage: createMemoryAdapter() })`.
 
 ## Using 2.0.1
 

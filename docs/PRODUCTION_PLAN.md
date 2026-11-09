@@ -121,7 +121,7 @@ compile under `bundler` and `nodenext`, and a plain import in Node without `wind
 - [x] Add a contract suite run against every adapter (local, session, memory).
 - [x] Run the suite in real Chromium, Firefox, and WebKit through Playwright.
 - [x] Enforce coverage of at least 95% lines and 90% branches.
-- [x] Add a bundle budget with `size-limit`: 3.5 kB gzipped for the core. (The first guess was 2 kB. The full API with cookies, subscriptions, and migrations measures 3.45 kB, so the budget is 3.5 kB.)
+- [x] Add a bundle budget with `size-limit`: 3.8 kB gzipped for the core. (The first guess was 2 kB. The full API with cookies, subscriptions, migrations, and security hardening measures 3.79 kB, so the budget is 3.8 kB.)
 
 **Exit:** CI fails on a coverage drop, a size overrun, or a failure in any browser.
 
@@ -165,7 +165,7 @@ Each feature must fit inside the size budget. If one does not, it becomes a sepa
 
 ## 5. Definition of done
 
-- Zero runtime dependencies, and at most 3.5 kB gzipped for the core.
+- Zero runtime dependencies, and at most 3.8 kB gzipped for the core.
 - Importing in Node without `window` does not throw.
 - ESM, CJS, the browser global, and TypeScript all resolve, verified in CI.
 - Tests pass in Chromium, Firefox, and WebKit, with the coverage gate on.

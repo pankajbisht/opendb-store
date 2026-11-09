@@ -6,34 +6,46 @@ export interface Subscription {
   notify(): void;
 }
 
-const subscriptions = new Set<Subscription>();
+// Grouped by key, so a write costs nothing for subscribers of other keys.
+const subscriptions = new Map<string, Set<Subscription>>();
 const hasWindow = (): boolean => typeof window !== 'undefined';
 
 function onStorageEvent(event: StorageEvent): void {
-  subscriptions.forEach((sub) => {
-    // A null key means another tab cleared the whole storage area.
-    const matchesKey = event.key === null || event.key === sub.rawKey;
-    if (matchesKey && event.storageArea === sub.ctx.adapter()) sub.notify();
-  });
+  // A null key means another tab cleared the whole storage area.
+  const groups =
+    event.key === null
+      ? [...subscriptions.values()]
+      : [subscriptions.get(event.key)];
+
+  groups.forEach((group) =>
+    group?.forEach((sub) => {
+      if (event.storageArea === sub.ctx.adapter()) sub.notify();
+    })
+  );
 }
 
 /** Tells this tab's subscribers, on any store sharing the adapter. */
 export function emit(ctx: Context, rawKey: string): void {
-  const adapter = ctx.adapter();
-
-  subscriptions.forEach((sub) => {
-    if (sub.rawKey === rawKey && sub.ctx.adapter() === adapter) sub.notify();
+  subscriptions.get(rawKey)?.forEach((sub) => {
+    if (sub.ctx.adapter() === ctx.adapter()) sub.notify();
   });
 }
 
 export function addSubscription(subscription: Subscription): () => void {
+  const { rawKey } = subscription;
+
   if (!subscriptions.size && hasWindow()) {
     window.addEventListener('storage', onStorageEvent);
   }
-  subscriptions.add(subscription);
+
+  const group = subscriptions.get(rawKey) ?? new Set();
+  subscriptions.set(rawKey, group.add(subscription));
 
   return () => {
-    subscriptions.delete(subscription);
+    group.delete(subscription);
+    if (!group.size && subscriptions.get(rawKey) === group) {
+      subscriptions.delete(rawKey);
+    }
     if (!subscriptions.size && hasWindow()) {
       window.removeEventListener('storage', onStorageEvent);
     }

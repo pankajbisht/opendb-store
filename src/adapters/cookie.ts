@@ -4,6 +4,9 @@ import type { CookieOptions, StorageAdapter, WriteMeta } from '../types';
 // 50 cookies per domain. Sizes beyond that vary, so this is the safe estimate.
 const MAX_COOKIE_BYTES = 4096;
 const SAFE_COOKIE_COUNT = 50;
+// Browsers cap cookie lifetimes at 400 days, and very large numbers would
+// print in exponent form, which is not a valid Max-Age.
+const MAX_AGE_LIMIT = 400 * 24 * 60 * 60;
 
 const encode = encodeURIComponent;
 
@@ -16,14 +19,49 @@ function decode(text: string): string {
   }
 }
 
+/** Rejects anything that could add extra attributes to the cookie. */
+export function isValidCookieOptions(options: CookieOptions): boolean {
+  const { path, domain, sameSite } = options;
+  const isSafe = (text: unknown): boolean =>
+    text === undefined ||
+    (typeof text === 'string' && !/[;\p{Cc}]/u.test(text));
+
+  return (
+    isSafe(path) &&
+    isSafe(domain) &&
+    [undefined, 'Strict', 'Lax', 'None'].includes(sameSite)
+  );
+}
+
+// A name that is not this adapter's own encoding stays literal, so a cookie
+// named `app%2Ekey` cannot pose as `app.key`.
+function decodeName(raw: string): string {
+  const name = decode(raw);
+  return encode(name) === raw ? name : raw;
+}
+
+let parsedText: string | undefined;
+let parsedCookies: [string, string][] = [];
+
 function readCookies(): [string, string][] {
-  return document.cookie
-    .split('; ')
-    .filter((pair) => pair.includes('='))
-    .map((pair) => {
-      const index = pair.indexOf('=');
-      return [decode(pair.slice(0, index)), decode(pair.slice(index + 1))];
-    });
+  const text = document.cookie;
+
+  // The browser's current text is always read. Only decoding it is reused.
+  if (text !== parsedText) {
+    parsedCookies = text
+      .split('; ')
+      .filter((pair) => pair.includes('='))
+      .map((pair) => {
+        const index = pair.indexOf('=');
+        return [
+          decodeName(pair.slice(0, index)),
+          decode(pair.slice(index + 1)),
+        ];
+      });
+    parsedText = text;
+  }
+
+  return parsedCookies;
 }
 
 export function createCookieAdapter(
@@ -59,7 +97,7 @@ export function createCookieAdapter(
       }
 
       const lifetime = meta?.expire
-        ? `; Max-Age=${Math.ceil((meta.expire - Date.now()) / 1000)}`
+        ? `; Max-Age=${Math.min(Math.ceil((meta.expire - Date.now()) / 1000), MAX_AGE_LIMIT)}`
         : '';
       write(pair, lifetime);
 

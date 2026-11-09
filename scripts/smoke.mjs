@@ -31,12 +31,12 @@ function check(label, run) {
 }
 
 const usage = `
-  assert.equal(db.local.set('k', 1), true);
-  assert.equal(db.local.get('k'), 1);
+  assert.equal(db.local.set('k', 1), false);
+  assert.equal(db.local.get('k', 'server'), 'server');
   assert.equal(createStore({ namespace: 'x' }).has('k'), false);
   assert.deepEqual(where(db.local, 'none', {}), []);
-  assert.equal(db.cookie.set('c', 1), true);
-  assert.equal(inspect(db.cookie).count, 1);
+  assert.equal(db.cookie.set('c', 1), false);
+  assert.equal(inspect(db.cookie).count, 0);
   console.log('used');
 `;
 
@@ -56,7 +56,11 @@ try {
        ${usage}`
     );
     assert.match(
-      execFileSync('node', [file], { cwd: dir, encoding: 'utf8' }),
+      execFileSync('node', [file], {
+        cwd: dir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }),
       /used/
     );
   });
@@ -74,7 +78,11 @@ try {
        ${usage}`
     );
     assert.match(
-      execFileSync('node', [file], { cwd: dir, encoding: 'utf8' }),
+      execFileSync('node', [file], {
+        cwd: dir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }),
       /used/
     );
   });
