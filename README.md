@@ -8,6 +8,8 @@ updates, schema migrations, and a storage size inspector, with no dependencies.
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](package.json)
 [![license](https://img.shields.io/npm/l/opendb-store)](LICENSE)
 
+**[Live examples](https://pankajbisht.github.io/opendb-store/public/)** · **[API reference](https://pankajbisht.github.io/opendb-store/api/)** · [Migrating from 2.x](docs/MIGRATION.md)
+
 ```js
 import db from 'opendb-store';
 
