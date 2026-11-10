@@ -2,10 +2,21 @@ name: Pages
 
 # Publishes the examples and generated API docs. Enable GitHub Pages with the
 # source set to GitHub Actions in the repository settings first.
+# release.yml runs this after each npm release, built from that release's tag, so the
+# site always shows the version on npm. Run it by hand to rebuild the docs.
 on:
-  push:
-    branches: [master]
+  workflow_call:
+    inputs:
+      ref:
+        description: Release tag to build
+        type: string
+        required: true
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag or branch to build (master is the latest release)
+        type: string
+        default: master
 
 permissions:
   contents: read
@@ -20,6 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ inputs.ref }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:

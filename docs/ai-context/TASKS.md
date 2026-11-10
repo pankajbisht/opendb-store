@@ -13,5 +13,6 @@ Steps are in `docs/DEVELOPMENT.md`, "First release of 3.0" and "Repository setti
 - [ ] Enable private vulnerability reporting, GitHub Pages, branch protection, npm two-factor
 - [ ] GitHub About: description, topics, website; upload `docs/assets/social-preview.png` as the social preview
 - [ ] Check on a real iPhone and Android phone
-- [ ] Merge to `master` to publish `3.0.0`
+- [ ] Delete the stale tags `v3.0.0` and `v3.0.0-next.2` (no npm version behind them)
+- [ ] Merge `fix/release-sync` to `master` to publish `3.0.0`
 - [ ] `npm deprecate` old ranges
