@@ -161,7 +161,7 @@
   "bugs": {
     "url": "https://github.com/pankajbisht/opendb-store/issues"
   },
-  "homepage": "https://github.com/pankajbisht/opendb-store#readme",
+  "homepage": "https://pankajbisht.github.io/opendb-store/",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
