@@ -12,10 +12,18 @@ const update = process.argv.includes('--update');
 const files = readdirSync(dist).filter((file) => file.endsWith('.d.ts'));
 const changed = [];
 
+// The release bumps the version before publishing, and `npm publish` runs this
+// check again. The version string is release data, not API, so it is masked.
+const maskVersion = (text) =>
+  text.replace(
+    /declare const version = "[^"]*";/g,
+    'declare const version: string;'
+  );
+
 mkdirSync(api, { recursive: true });
 
 for (const file of files) {
-  const current = readFileSync(join(dist, file), 'utf8');
+  const current = maskVersion(readFileSync(join(dist, file), 'utf8'));
   let saved = '';
 
   try {

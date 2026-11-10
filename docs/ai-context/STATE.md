@@ -14,8 +14,12 @@ namespaces, TTL, cross-tab events, migrations, debug tool. Core 4.4 kB gzipped; 
 | `next` (remote) | All 3.0 code, pushed from `refactor/v3`. Pushes run the release workflow (`3.0.0-next.N`, npm tag `next`) |
 | Tag `v2.0.1` | Pushed |
 
-First `next` release run (2026-11-10, run 42750575402): every CI job passed; `semantic-release` failed before tagging,
-almost certainly npm authentication (`NPM_TOKEN` secret or trusted publishing). Nothing was published.
+`next` release runs 42750575402 and 42751935074 (2026-11-10): every CI job passed; `semantic-release` failed with
+"Invalid npm token". `@semantic-release/npm` 13 tries OIDC trusted publishing first (not set up on npmjs.com), then
+falls back to the `NPM_TOKEN` secret (rejected by npm). The owner then fixed npm auth. The re-run tagged
+`v3.0.0-next.1` but `npm publish` failed: `prepublishOnly` reruns `check:package` after the version bump, and the API
+report saw the new `version` string. `scripts/api-report.mjs` now masks it. `3.0.0-next.1` is a git tag only; the
+next prerelease is `3.0.0-next.2`.
 
 npm discoverability: description and keywords target search terms (`localstorage`, `sessionstorage`, `cookie`,
 `indexeddb`, `ttl`, ...). README has badges, a compatibility line, and "Coming from another library?". Social preview
