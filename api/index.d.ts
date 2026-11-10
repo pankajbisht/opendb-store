@@ -129,7 +129,7 @@ declare function createStore(options?: StoreOptions): Store;
 
 declare function createMemoryAdapter(): StorageAdapter;
 
-declare const version = "2.0.1";
+declare const version: string;
 
 /**
  * Asks the browser to keep this site's storage when space runs low. Resolves
