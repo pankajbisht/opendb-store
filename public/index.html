@@ -1,67 +1,56 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>opendb storre</title>
-    <meta charset="UTF-8" />
-    <meta name="name" content="content" />
-    <style>
-      * {
-        padding: 0;
-        margin: 0;
-      }
-      .row {
-        padding: 20px 10px;
-      }
-      #name {
-        color: red;
-        font-weight: bold;
-      }
-      blockquote {
-        background: #f9f9f9;
-        border-left: 5px solid #ccc;
-        padding: 0.5em 10px;
-      }
-      .indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        background: red;
-        border-radius: 12px;
-      }
-    </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>opendb-store examples</title>
+    <link rel="stylesheet" href="shared/styles.css" />
   </head>
   <body>
-    <blockquote>
-      <p class="row">
-        At the starting your storage has no value after fill form and submit the
-        form your storage is set now you can see the change and if you reload
-        the page value is received from local db.
-      </p>
-    </blockquote>
-
-    <div class="row">
-      <p>
-        Your name was:
-        <label class="indicator"></label>
-        <span id="name"> Local storage is Empty </span>
-      </p>
-    </div>
-
-    <form name="form">
-      <div class="row">
-        <label for="input">Name:</label>
-        <input
-          type="text"
-          placeholder="Enter the name"
-          name="name"
-          id="input"
-        />
-        <input type="submit" />
-      </div>
-    </form>
-
-    <!-- <script src="../dist/opendb-umd.min.js"></script> -->
-    <script type="module" src="./main.js"></script>
-    <script type="module" src="./main.dev.js"></script>
+    <main>
+      <h1>opendb-store examples</h1>
+      <p>Each example is one small page with its own <code>main.js</code>. The code imports the library the same way your project would.</p>
+      <ul class="gallery">
+        <li>
+          <a href="examples/basics/"><strong>Basics</strong><span>Save, read, check, and remove a value. It survives a page reload.</span></a>
+        </li>
+        <li>
+          <a href="examples/expiry/"><strong>Expiry</strong><span>Give a value a lifetime and watch it disappear by itself.</span></a>
+        </li>
+        <li>
+          <a href="examples/theme-sync/"><strong>Theme sync across tabs</strong><span>Subscribers hear about changes from this tab and from your other tabs.</span></a>
+        </li>
+        <li>
+          <a href="examples/api-cache/"><strong>API response cache</strong><span>Serve repeat requests from storage and refetch only when the data is stale.</span></a>
+        </li>
+        <li>
+          <a href="examples/form-draft/"><strong>Form autosave</strong><span>Type, then reload. The draft stays in this tab until you submit it.</span></a>
+        </li>
+        <li>
+          <a href="examples/cookie-consent/"><strong>Cookie consent</strong><span>Remember a choice for a year in a cookie that your server can also read.</span></a>
+        </li>
+        <li>
+          <a href="examples/shopping-cart/"><strong>Shopping cart</strong><span>Keep a cart between visits and query it with the helpers from opendb-store/query.</span></a>
+        </li>
+        <li>
+          <a href="examples/user-accounts/"><strong>Per-user data and logout</strong><span>Each user gets a namespace, so logging out removes only that user's data.</span></a>
+        </li>
+        <li>
+          <a href="examples/schema-migration/"><strong>Schema migration</strong><span>Change your data shape without breaking returning users. Old entries upgrade when first read.</span></a>
+        </li>
+        <li>
+          <a href="examples/error-handling/"><strong>Error handling</strong><span>Operations never throw. Every failure returns a result and reaches one handler.</span></a>
+        </li>
+        <li>
+          <a href="examples/indexeddb/"><strong>IndexedDB</strong><span>Store large or binary data that would not fit in localStorage.</span></a>
+        </li>
+        <li>
+          <a href="examples/compression/"><strong>Compression</strong><span>Fit far more into localStorage by compressing large values.</span></a>
+        </li>
+        <li>
+          <a href="examples/storage-debug/"><strong>Storage size debugger</strong><span>See how much each storage is using, and which keys are the largest.</span></a>
+        </li>
+      </ul>
+    </main>
   </body>
 </html>

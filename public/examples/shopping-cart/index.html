@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shopping cart | opendb-store</title>
+    <link rel="stylesheet" href="../../shared/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "opendb-store": "../../../dist/opendb-esm.js",
+          "opendb-store/query": "../../../dist/query.js",
+          "opendb-store/debug": "../../../dist/debug.js",
+          "opendb-store/indexeddb": "../../../dist/indexeddb.js",
+          "opendb-store/compress": "../../../dist/compress.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../">All examples</a>
+      <h1>Shopping cart</h1>
+      <p>Keep a cart between visits and query it with the helpers from opendb-store/query.</p>
+      <div id="catalog" class="row"></div>
+      <h2>Cart</h2>
+      <ul id="items"></ul>
+      <p>Line items: <strong id="skus"></strong></p>
+      <p>Saved for later: <strong id="later"></strong></p>
+      <p>Last updated: <strong id="updated"></strong></p>
+      <button id="empty" class="secondary">Empty cart</button>
+      <p class="source">Source: <code>public/examples/shopping-cart/main.js</code></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

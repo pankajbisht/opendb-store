@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IndexedDB | opendb-store</title>
+    <link rel="stylesheet" href="../../shared/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "opendb-store": "../../../dist/opendb-esm.js",
+          "opendb-store/query": "../../../dist/query.js",
+          "opendb-store/debug": "../../../dist/debug.js",
+          "opendb-store/indexeddb": "../../../dist/indexeddb.js",
+          "opendb-store/compress": "../../../dist/compress.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../">All examples</a>
+      <h1>IndexedDB</h1>
+      <p>Store large or binary data that would not fit in localStorage. Every method returns a promise.</p>
+      <form id="form" class="row">
+        <label for="note">Shared note</label>
+        <input id="note" placeholder="Type a note" required />
+        <button>Save</button>
+      </form>
+      <p>Note: <strong id="current"></strong></p>
+      <p class="hint"><a href="./" target="_blank">Open this page in a second tab</a> and save a note there.</p>
+      <div class="row">
+        <button id="dataset">Save 12 MB of binary data</button>
+        <button id="types">Save Date and Map</button>
+        <button id="file">Save a text file</button>
+        <button id="patches">Run 20 patches at once</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <p>Last result: <strong id="result"></strong></p>
+      <h2>What is stored</h2>
+      <ul id="items"></ul>
+      <p id="usage" class="hint"></p>
+      <p class="source">Source: <code>public/examples/indexeddb/main.js</code></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

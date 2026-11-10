@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API response cache | opendb-store</title>
+    <link rel="stylesheet" href="../../shared/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "opendb-store": "../../../dist/opendb-esm.js",
+          "opendb-store/query": "../../../dist/query.js",
+          "opendb-store/debug": "../../../dist/debug.js",
+          "opendb-store/indexeddb": "../../../dist/indexeddb.js",
+          "opendb-store/compress": "../../../dist/compress.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../">All examples</a>
+      <h1>API response cache</h1>
+      <p>Serve repeat requests from storage and refetch only when the data is stale.</p>
+      <div class="row">
+        <button id="load">Load products</button>
+        <button id="clear" class="secondary">Clear cache</button>
+      </div>
+      <p>Source: <strong id="source">Not loaded</strong></p>
+      <p>Server calls so far: <strong id="calls">0</strong></p>
+      <pre id="output"></pre>
+      <p class="source">Source: <code>public/examples/api-cache/main.js</code></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
