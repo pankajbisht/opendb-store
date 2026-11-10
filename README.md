@@ -28,9 +28,10 @@ db.session.set('checkoutStep', 2);
 | Throws when full, or when storage is blocked | Returns `false` and tells you why |
 | A different cookie API, with manual encoding | The same API for cookies |
 | No idea how much space is left | `debug(db)` shows usage per key |
+| Full at about 5 MB | Optional compression fits several times more |
 
-The core is under 4 kB gzipped. IndexedDB, query helpers, and the debug tool are separate imports, so they
-cost nothing unless you use them.
+The core is about 4.5 kB gzipped. IndexedDB, compression, the cache, React, query helpers, and the debug tool
+are separate imports, so they cost nothing unless you use them.
 
 ## Install
 
@@ -108,6 +109,9 @@ db.cookie.set('consent', { analytics: true, ads: false }, { expire: ONE_YEAR });
 
 if (db.cookie.get('consent', {}).analytics) loadAnalytics();
 ```
+
+Safari keeps cookies set from JavaScript for at most 7 days. For a choice that must last longer there, set the
+cookie from your server.
 
 Read it on the server. Cookie libraries decode the value for you:
 
@@ -189,27 +193,34 @@ const settings = createStore({
 });
 ```
 
-### React hook, safe with server rendering
+### Keep a cache from growing too big
 
-The first render uses the fallback so it matches the server, and the stored value follows after hydration.
-This works with Next.js.
+```js
+import { createCache } from 'opendb-store/cache';
 
-```tsx
-import { useEffect, useState } from 'react';
-import type { Store } from 'opendb-store';
+const recent = createCache(createStore({ namespace: 'recent' }), { maxEntries: 50 });
 
-export function useStored<T>(store: Store, key: string, fallback: T) {
-  const [value, setValue] = useState(fallback);
+recent.set(`/api/products/${id}`, product, { expire: 10 * 60 * 1000 });
+recent.get(`/api/products/${id}`); // reading counts as use
+```
 
-  useEffect(() => {
-    setValue(store.get(key, fallback));
-    return store.subscribe<T>(key, (next) => setValue(next ?? fallback));
-  }, [store, key]);
+Once there are more than 50 entries, the least recently used is removed. Write through the cache so it can track use.
 
-  return [value, (next: T) => store.set(key, next)] as const;
-}
+### Check data you read back
 
-// const [prefs, setPrefs] = useStored(db.local, 'prefs', { theme: 'light' });
+Anything in browser storage can be edited by the user or by other scripts. Validate it before you trust it:
+
+```js
+import { z } from 'zod';
+
+const Settings = z.object({ theme: z.enum(['light', 'dark']), fontSize: z.number() });
+
+const settings = createStore({
+  namespace: 'settings',
+  validate: (value) => Settings.safeParse(value).success,
+});
+
+settings.get('current', defaults); // edited or malformed data reads as missing
 ```
 
 ### Handle full or blocked storage
@@ -228,6 +239,209 @@ if (!store.set('report', hugeObject)) useServerCopy();
 ```
 
 When storage is full, expired entries are cleared and the write is retried before it fails.
+
+## Use with React and Angular
+
+Every store, including IndexedDB, works the same way in a component. The value starts as your fallback, which
+matches what a server renders. The stored value follows in the browser, and changes made in other tabs update
+the component.
+
+### React
+
+Use the built-in hook. It needs React 18 or later, and only loads if you import it.
+
+```tsx
+'use client'; // Next.js App Router: storage only exists in the browser.
+
+import db from 'opendb-store';
+import { indexed } from 'opendb-store/indexeddb';
+import { useStored } from 'opendb-store/react';
+
+export function ThemeToggle() {
+  const [theme, setTheme] = useStored(db.local, 'theme', 'light');
+
+  return (
+    <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+      {theme}
+    </button>
+  );
+}
+
+export function Drafts() {
+  // IndexedDB works the same way; the hook handles the promises.
+  const [drafts, setDrafts, clearDrafts] = useStored(indexed, 'drafts', [] as string[]);
+
+  return (
+    <>
+      <button onClick={() => setDrafts([...drafts, `Draft ${drafts.length + 1}`])}>Add</button>
+      <button onClick={clearDrafts}>Clear</button>
+      <ul>{drafts.map((draft) => <li key={draft}>{draft}</li>)}</ul>
+    </>
+  );
+}
+```
+
+`useStored(store, key, fallback)` returns `[value, setValue, remove]`. The value is typed from the fallback.
+
+### Angular
+
+There is no Angular package to install. Copy this helper, which turns a stored value into a signal. It needs
+Angular 17 or later and TypeScript 5.4 or later.
+
+```ts
+// stored-signal.ts
+import { DestroyRef, afterNextRender, inject, signal } from '@angular/core';
+import type { Key } from 'opendb-store';
+
+/** What the helper needs. Every opendb-store store, including IndexedDB, has it. */
+interface StoreLike<T> {
+  get(key: Key, fallback: T): T | Promise<T>;
+  set(key: Key, value: T): unknown;
+  remove(key: Key): unknown;
+  subscribe(key: Key, listener: (value: T | null) => void): () => void;
+}
+
+/**
+ * A signal that mirrors one stored value, including changes from other tabs.
+ * Call it in an injection context, such as a component field.
+ */
+export function storedSignal<T>(store: StoreLike<NoInfer<T>>, key: Key, fallback: T) {
+  const value = signal<T>(fallback); // Matches the server render.
+
+  // Runs in the browser only, after hydration.
+  afterNextRender(async () => value.set(await store.get(key, fallback)));
+
+  const stop = store.subscribe(key, (next) => value.set(next ?? fallback));
+  inject(DestroyRef).onDestroy(stop);
+
+  return {
+    value: value.asReadonly(),
+    set: (next: T) => void store.set(key, next),
+    remove: () => void store.remove(key),
+  };
+}
+```
+
+Use it as a component field:
+
+```ts
+import { Component } from '@angular/core';
+import db from 'opendb-store';
+import { indexed } from 'opendb-store/indexeddb';
+import { storedSignal } from './stored-signal';
+
+@Component({
+  selector: 'app-theme-toggle',
+  template: `<button (click)="toggle()">{{ theme.value() }}</button>`,
+})
+export class ThemeToggle {
+  theme = storedSignal(db.local, 'theme', 'light');
+  drafts = storedSignal(indexed, 'drafts', [] as string[]);
+
+  toggle() {
+    this.theme.set(this.theme.value() === 'light' ? 'dark' : 'light');
+  }
+}
+```
+
+The subscription ends when the component is destroyed, and server rendering keeps the fallback, so hydration
+matches. If you prefer RxJS:
+
+```ts
+import { Observable } from 'rxjs';
+import db from 'opendb-store';
+
+/** The current value, then every change. */
+export function stored$<T>(key: string, fallback: T): Observable<T> {
+  return new Observable<T>((subscriber) => {
+    subscriber.next(db.local.get(key, fallback));
+    return db.local.subscribe<T>(key, (next) => subscriber.next(next ?? fallback));
+  });
+}
+```
+
+### Other frameworks
+
+Any framework can use the same three steps: read the value with `get`, follow changes with `subscribe`, and call
+the function `subscribe` returns when the component goes away.
+
+## How much each store holds
+
+| Store | How much it holds | Shared by | How long data lasts |
+| --- | --- | --- | --- |
+| `db.local` | 5 MB per site | Every tab and window of your site | Until removed or the user clears site data |
+| `db.session` | 5 MB per site | One tab only | Until the tab closes |
+| `db.cookie` | About 4 KB per cookie, and at least 50 cookies per site | Your site, and sent to your server with every request | Until `expire`, which browsers cap at 400 days; without `expire`, until the browser closes |
+| `indexed` | Usually gigabytes, set by the browser from free disk space | Every tab and window of your site | Until removed or the user clears site data |
+
+How these limits work:
+
+- **Local and session storage** count characters, not bytes: 5,242,880 characters for keys and values together.
+  This was measured as the same in Chromium, Firefox, and WebKit. Most emoji count as 2 characters.
+- **Cookies:** Chromium keeps about 150 per site, and Firefox and WebKit allow more. Many servers reject
+  requests whose headers exceed 8 to 16 KB, so keep cookies small.
+- **IndexedDB:** the limit depends on the browser and the free disk space. Ask for the real figure with
+  `await indexed.capacity()`. It is much smaller in private windows.
+- **Per site:** limits apply to each origin, meaning the scheme, host, and port. `https://app.example.com` and
+  `https://example.com` have separate space.
+- **Safari** caps cookies set by JavaScript at 7 days. It can also delete all script-written storage for a site
+  the user has not visited in 7 days of browser use. Installed home-screen web apps are exempt.
+- **Private windows** delete everything when they close.
+
+`capacity()` returns these estimates, which `free()` and the debug tool also use: 5 MB for local and session
+storage, 200 KB for cookies, and the browser's own figure for IndexedDB.
+
+## Store more with compression
+
+Local and session storage hold plain text. For large values, add compression:
+
+```js
+import { createStore } from 'opendb-store';
+import { compressed } from 'opendb-store/compress';
+
+const catalog = createStore({ namespace: 'catalog', serializer: compressed() });
+
+catalog.set('products', products); // stored compressed if that is smaller
+catalog.get('products'); // decompressed automatically
+```
+
+Measured with 2,000 realistic product records, about 383 K characters of JSON:
+
+| | Plain JSON | Compressed |
+| --- | --- | --- |
+| Stored size | 383,044 characters | 22,225 characters |
+| Products that fit, Chromium and Firefox | about 30,000 | about 200,000 |
+| Products that fit, Safari (WebKit) | about 30,000 | about 100,000 |
+| Time to write them | about 1 ms | about 12 ms |
+| Time to read them | about 0.5 ms | about 3.5 ms |
+
+- Values under 1,024 characters of JSON are stored as they are. Set `compressed({ minLength })` to change that.
+- A value is stored compressed only when that is actually smaller.
+- Listing keys, `has`, `ttl`, and expiry never decompress anything.
+- Gains depend on how repetitive your data is. Random data and images barely shrink.
+- Safari gains less, because its limit counts these compressed characters as more expensive.
+- Use it with local and session stores only. Compressed text grows when made safe for a cookie, and IndexedDB
+  already has plenty of room.
+- Plain and compressed entries can share a store, so you can turn it on at any time.
+
+## Performance
+
+Reading or writing one key costs the same whether storage is empty or full. With about 4.5 MB stored, `get`,
+`set`, and `has` on a normal entry take about 0.01 ms.
+
+Operations that look at every entry read only the expiry at the end of each stored value, so they do not decode
+it. With 4,400 entries filling about 4.5 MB, in Chromium:
+
+| Operation | Time |
+| --- | --- |
+| `get`, `set`, `has`, `ttl` on one entry | about 0.01 ms |
+| `keys()` or `count` | about 2.5 ms |
+| `purgeExpired()` | about 2 ms |
+| `values()` or `entries()`, which must decode everything | about 5 ms |
+
+The one cost that grows with size is reading a single large value: `get` on a 4.4 MB value takes 0.6 to 4.6 ms,
+depending on the browser, and that time blocks the page. For values over a few hundred kilobytes, use IndexedDB,
+which does its work off the page, or compression. The debug tool warns about any entry over 512 KB.
 
 ## See how much storage you are using
 
@@ -252,6 +466,7 @@ debug(db.local);
 ```
 
 - `debug(db)` reports local, session, and cookies together.
+- It warns about any local or session entry over 512 KB, because reading it blocks the page.
 - `await debug(indexed)` and `await inspect(indexed)` work for IndexedDB too.
 - `debug(store, { warnAt: 70 })` warns when the origin is 70% full. The default is 80.
 - `inspect(store)` returns the same figures without printing, for your own dashboard or alert.
@@ -289,7 +504,8 @@ const store = createStore({ namespace: 'myapp' });
 | `defaultTTL` | | Lifetime in milliseconds when `set` has no `expire` |
 | `version` | | Schema version, a positive integer |
 | `migrate` | | `(value, fromVersion, key) => newValue`; return `undefined` to discard |
-| `serializer` | JSON | `{ serialize, deserialize }`, for example to encrypt |
+| `serializer` | JSON | `{ serialize, deserialize }`, for example `compressed()` |
+| `validate` | | `(value, key) => boolean`; rejected values read as missing |
 | `onError` | `console.warn` | Receives each failure |
 
 `createIndexedStore` takes the same options, except `storage` and `cookie`, and adds `database`.
@@ -319,6 +535,10 @@ const store = createStore({ namespace: 'myapp' });
 Pass `{ format: 'KB', unit: true }` to size methods to get text like `"12.40 KB"`.
 
 IndexedDB stores have the same methods, each returning a promise that never rejects. Use `await store.count`.
+They also have `setMany`, `getMany`, and `removeMany`, which do many keys in one transaction.
+
+`requestPersistence()` asks the browser not to clear your site's storage when the disk fills up. It resolves to
+whether the browser agreed.
 
 ### Error codes
 
@@ -332,6 +552,7 @@ IndexedDB stores have the same methods, each returning a promise that never reje
 | `INVALID_ARGUMENT` | A bad `expire`, an unknown option, or a `patch` on a non-object |
 | `MIGRATION_FAILED` | `migrate` threw; the stored data is kept |
 | `LISTENER_FAILED` | A `subscribe` callback threw |
+| `VALIDATION_FAILED` | The `validate` option rejected a value |
 
 ## Good to know
 
@@ -343,7 +564,8 @@ IndexedDB stores have the same methods, each returning a promise that never reje
 - Defaults are `Path=/`, `SameSite=Lax`, and `Secure` on HTTPS.
 - Every cookie is sent with every request to your server, so keep them small.
 - JavaScript cannot create `HttpOnly` cookies. Authentication sessions should be set by your server.
-- `subscribe` sees cookie changes from the current tab only.
+- `subscribe` sees cookie changes from other tabs in browsers with the CookieStore API, and from the current tab
+  everywhere.
 
 **IndexedDB**
 
@@ -374,9 +596,9 @@ const theme = db.local.get('theme', 'light'); // string
 
 ## Try the examples
 
-The repository has 12 small working examples, each in its own folder under
+The repository has 13 small working examples, each in its own folder under
 [`public/examples/`](public/README.md): theme sync, API caching, form autosave, cookie consent, a shopping cart,
-schema migration, error handling, IndexedDB, a storage size debugger, and more.
+schema migration, error handling, IndexedDB, compression, a storage size debugger, and more.
 
 ```sh
 npm install
@@ -385,6 +607,7 @@ npm run demo
 
 ## Documentation
 
+- [How it works, in diagrams](docs/DIAGRAMS.md)
 - [API reference](docs/API.md)
 - [Migrating from 2.x](docs/MIGRATION.md): your stored data keeps working
 - [Architecture](docs/ARCHITECTURE.md)

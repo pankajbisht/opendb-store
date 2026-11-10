@@ -46,6 +46,7 @@ project.
 | [`schema-migration`](examples/schema-migration/main.js) | Change your data shape without breaking returning users. Old entries upgrade when first read. |
 | [`error-handling`](examples/error-handling/main.js) | Operations never throw. Every failure returns a result and reaches one handler. |
 | [`indexeddb`](examples/indexeddb/main.js) | Store large or binary data that would not fit in localStorage. |
+| [`compression`](examples/compression/main.js) | Fit far more into localStorage by compressing large values. |
 | [`storage-debug`](examples/storage-debug/main.js) | See how much each storage is using, and which keys are the largest. |
 
 ## Add an example

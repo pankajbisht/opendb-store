@@ -156,3 +156,23 @@ Measured in Chromium, Firefox, and WebKit against raw IndexedDB calls.
 | `purgeExpired()` with nothing to remove | 0.7 ms | under 0.1 ms | 0.3 ms |
 
 `keys()` and `count` decode every record, so they stay consistent with `has` and `get`.
+
+## Full storage and compression (2026-11-10)
+
+With 4,400 entries filling about 4.5 MB, in Chromium (Firefox and WebKit moved the same way):
+
+| Operation | Before | After |
+| --- | --- | --- |
+| `get`, `has`, `ttl` on one normal entry | about 0.01 ms | about 0.01 ms |
+| `keys()` | 6.5 ms | 2.5 ms |
+| `count` | 5.5 ms | 2.0 ms |
+| `purgeExpired()` | 3.9 ms | 1.8 ms |
+| A write that fails because storage is full | 6.6 ms | 2.8 ms |
+| `has`, `ttl`, `size` on one 4.4 MB value, Firefox | 4.6 to 4.9 ms | under 0.1 ms |
+
+The change reads expiry from the end of the stored text instead of decoding values.
+
+Optional compression with 2,000 realistic product records: 17 times smaller. Product records that fit before
+storage is full rose from about 30,000 to about 200,000 in Chromium and Firefox, and to about 100,000 in WebKit.
+Writing took about 12 ms instead of 1 ms, and reading about 3.5 ms instead of 0.5 ms.
+

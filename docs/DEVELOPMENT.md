@@ -12,22 +12,28 @@ npx playwright install chromium firefox webkit   # only for browser tests
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Lint, typecheck, unit tests with the coverage gate |
-| `npm run test:unit` | Unit tests only |
+| `npm test` | Lint, typecheck (including type tests), unit tests with the coverage gate |
 | `npm run test:browser` | Tests in real Chromium, Firefox, and WebKit |
-| `npm run typecheck` | TypeScript, no output |
-| `npm run lint`, `npm run lint:fix` | ESLint on `src`, `tests`, and `scripts` |
-| `npm run format` | Prettier on the repository |
-| `npm run build` | Clean, compile to `dist/`, minify |
-| `npm run demo` | Build, then serve the examples in `public/` |
-| `npm run check:package` | Build, `publint`, type resolution, size budget, consumer smoke tests |
+| `npm run test:coverage:all` | Coverage across jsdom and real Chromium together |
+| `npm run test:examples` | Every example in three browsers and on emulated phones; needs a build |
+| `npm run test:csp` | Every bundle under a strict Content Security Policy; needs a build |
+| `npm run test:mutation` | Mutation testing; slow, so CI runs it weekly |
+| `npm run check:package` | Build, `publint`, type resolution, size budgets, API report, smoke tests |
+| `npm run api:update` | Accept a change to the public types into `api/` |
+| `npm run bench` | Benchmarks in three browsers; see `bench/README.md` |
+| `npm run docs:api` | Generate API docs from the source into `site/api` |
+| `npm run demo` | Build, then serve the examples |
+| `npm run lint`, `npm run lint:fix` | ESLint |
+| `npm run format` | Prettier |
 
 Things to know:
 
 - Tests import `src/`, so no build is needed to run them.
-- `dist/` is generated and not tracked. `npm run demo` builds it for the examples.
+- `dist/` is generated and not tracked.
 - `src/version.ts` is generated from `package.json` during the build.
 - The pre-commit hook runs lint-staged. The pre-push hook runs `npm test`.
+- A change to exported types fails `check:package` until you run `npm run api:update` and commit `api/`. That
+  makes every public API change visible in review.
 
 ## Tests
 
@@ -43,6 +49,12 @@ Things to know:
 | `tests/events.test.ts` | Subscriptions and purging |
 | `tests/migrate.test.ts` | Schema migrations |
 | `tests/debug.test.ts` | The debug tools |
+| `tests/properties.test.ts` | Property-based tests with fast-check, including a store-against-a-map model |
+| `tests/types.test.ts` | Compile-time checks of the public types |
+| `tests/cache.test.ts`, `tests/react.test.tsx` | The cache and the React hook |
+| `tests/additions.test.ts` | Validation, batches, layout upgrades, persistence, and watching adapters |
+| `tests/peek.test.ts` | Reading expiry without decoding, including every case that must fall back |
+| `tests/compress.test.ts` | Compression round trips, damaged input, size limits, and compressed stores |
 | `tests/indexeddb.test.ts` | IndexedDB behaviour; uses `fake-indexeddb` in jsdom and the real thing in browsers |
 | `tests/indexeddb-failures.test.ts` | Blocked storage, quota, closed connections, and never rejecting |
 | `tests/indexeddb-ssr.test.ts` | IndexedDB without a `window` |
@@ -52,8 +64,27 @@ Things to know:
 ## Limits enforced by tooling
 
 - Coverage: at least 95% of lines, statements, and functions, and 90% of branches.
-- Size: 3.9 kB gzipped for `dist/opendb-esm.min.js`, and 4.6 kB for `dist/indexeddb-umd.min.js`.
+- Size: 4.2 kB gzipped for `dist/opendb-esm.min.js`, 4.6 kB for `dist/indexeddb-umd.min.js`, and 1.5 kB for
+  `dist/compress-umd.min.js`.
 - `dependencies` in `package.json` must be empty; `scripts/smoke.mjs` checks this.
+
+## Workflows
+
+| Workflow | When | What |
+| --- | --- | --- |
+| `ci.yml` | Pull requests, and before every release | Tests on Node 22 and 24, real browsers, examples, CSP, coverage, package checks |
+| `release.yml` | Push to `master` or `next` | CI, then semantic-release with provenance |
+| `codeql.yml` | Pushes, pull requests, weekly | GitHub code scanning |
+| `scorecard.yml` | Push to `master`, weekly | OpenSSF Scorecard supply-chain checks |
+| `pages.yml` | Push to `master` | Publishes the examples and API docs to GitHub Pages |
+| `quality.yml` | Weekly, or by hand | Mutation testing and benchmarks, as reports |
+
+## Repository settings only the owner can change
+
+- Enable GitHub Pages with the source set to GitHub Actions.
+- Protect `master` and `next`: require pull requests and the CI checks to pass.
+- Turn on two-factor authentication for the npm account, and set up trusted publishing (see below).
+- Enable private vulnerability reporting.
 
 ## Commits and releases
 

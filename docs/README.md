@@ -4,6 +4,7 @@
 | --- | --- |
 | [PRODUCTION_PLAN.md](PRODUCTION_PLAN.md) | See the roadmap to a production-grade 3.0: decisions, phases, exit criteria |
 | [AUDIT.md](AUDIT.md) | See every defect found, with severity, location, and how it was confirmed |
+| [DIAGRAMS.md](DIAGRAMS.md) | See how it works, as flow diagrams |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Understand how the library is designed |
 | [API.md](API.md) | Look up a method in 3.0, and the limits of 2.0.1 |
 | [MIGRATION.md](MIGRATION.md) | Move an application from 2.x to 3.0 |

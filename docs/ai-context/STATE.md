@@ -1,7 +1,7 @@
 # State (updated 2026-11-09)
 
 **Project:** `opendb-store`, a zero-dependency wrapper for localStorage, sessionStorage, cookies, and IndexedDB: JSON,
-namespaces, TTL, cross-tab events, migrations, debug tool. Core 3.8 kB gzipped; IndexedDB entry 4.5 kB.
+namespaces, TTL, cross-tab events, migrations, debug tool. Core 4.4 kB gzipped; IndexedDB 5.0 kB; compression 1.1 kB; cache 1 kB; React 0.5 kB.
 
 **Goal:** production-grade `3.0.0`. Plan: `docs/PRODUCTION_PLAN.md`.
 
@@ -23,7 +23,7 @@ Backups of the pre-rewrite tree are in `.git/backups/`.
 ## Hazards
 
 - Pushing to `master` can auto-publish to npm.
-- The core is at 3.8 of 3.9 kB. New features must be subpath exports or need a budget decision.
+- The core is at 4.4 of 4.6 kB. New features must be subpath exports or need a budget decision.
 
 ## Next task
 

@@ -17,6 +17,7 @@ CommonJS and script tags expose the same names: `require('opendb-store').local` 
 | `version` | none | Schema version, a positive integer, recorded on each entry |
 | `migrate` | none | `(value, fromVersion, key) => newValue`. Requires `version` |
 | `serializer` | JSON | `{ serialize, deserialize }`; receives the whole entry |
+| `validate` | none | `(value, key) => boolean`. Rejected values read as missing and report `VALIDATION_FAILED` |
 | `onError` | `console.warn` | Receives every failure as a `StoreError` |
 
 Invalid options, including `cookie` attributes containing `;` or control characters, throw `TypeError`
@@ -54,7 +55,8 @@ session stores measure UTF-16 code units, the unit browsers limit. Cookie stores
 cookies of 4096 bytes. Real limits vary by browser and cannot be queried.
 
 **Iteration** (`keys`, `values`, `entries`, `count`) skips values this library did not write and removes
-expired entries as it goes.
+expired entries as it goes. `keys`, `count`, `has`, `ttl`, `size`, and `purgeExpired` read only the expiry at
+the end of each stored value, so their cost does not grow with value size.
 
 ## subscribe
 
@@ -62,6 +64,9 @@ expired entries as it goes.
 | --- | --- | --- | --- |
 | Same tab, any store instance | Yes | Yes | Yes |
 | Other tabs | Yes | No, sessions are per tab | No |
+
+For local, session, and cookie stores, a listener is called only when the stored text changes, so an identical
+rewrite is silent. Cookie changes in other tabs are reported in browsers with the CookieStore API.
 
 Stored migrations triggered by reads do not notify. Expiry notifies when the entry is discovered to be gone.
 A listener is not called again for a change it makes to its own key while running.
@@ -111,6 +116,7 @@ default, and the stored data is kept. Stores without `version` write the plain 2
 | `INVALID_KEY` | `set`, `patch`, `remove`, or `subscribe` got an invalid key |
 | `INVALID_ARGUMENT` | A bad `expire`, an unknown option, or a `patch` on a non-object |
 | `MIGRATION_FAILED` | `migrate` threw |
+| `VALIDATION_FAILED` | `validate` rejected a value, or threw |
 | `LISTENER_FAILED` | A `subscribe` listener threw |
 
 ## Debug tools
@@ -146,8 +152,48 @@ omit(db.local, 'user', ['password']);
 
 ## Custom adapters
 
-An adapter needs `length`, `key`, `getItem`, `setItem`, and `removeItem`. Optional: `capacity`, and
-`measure(key, value)` for size reporting. `setItem` receives `{ expire }` as a third argument.
+An adapter needs `length`, `key`, `getItem`, `setItem`, and `removeItem`. Optional: `capacity`,
+`measure(key, value)` for size reporting, and `watch(onChange)` to report changes made elsewhere: call
+`onChange(rawKey)`, or `onChange(null)` for everything, and return a function that stops watching. `setItem`
+receives `{ expire }` as a third argument.
+
+## Validation
+
+`validate(value, key)` runs on every value read by `get`, `values`, `entries`, `remove`, `patch`, and `getMany`.
+If it returns false or throws, the value reads as missing, `patch` refuses to merge into it, and
+`VALIDATION_FAILED` is reported. `has`, `keys`, and `count` report existence only and do not validate.
+
+## Size-limited cache
+
+```ts
+import { createCache } from 'opendb-store/cache';
+
+const cache = createCache(store, { maxEntries: 100, touchOnRead: true });
+```
+
+Wraps a local, session, or cookie store. Beyond `maxEntries`, the least recently used entry is removed; reading
+counts as use unless `touchOnRead` is false. The usage order is stored beside the store under
+`<namespace>~order`, outside its keys. Write through the cache, because writes made directly to the store are not
+tracked. Methods: `get`, `set`, `has`, `remove`, `clear`, `keys` (least to most recently used), and `count`.
+
+## React
+
+```tsx
+import { useStored } from 'opendb-store/react';
+
+const [value, setValue, remove] = useStored(store, 'key', fallback);
+```
+
+Works with every store type. The first render returns `fallback`, so server and client output match; the stored
+value follows in an effect, and subscriptions keep it current. Needs React 18 or later.
+
+For Angular, the README has a `storedSignal` helper built on signals, and an RxJS version. They use only `get`,
+`set`, `remove`, and `subscribe`, so they work with every store.
+
+## requestPersistence()
+
+`import { requestPersistence } from 'opendb-store'`. Asks the browser to keep this site's storage when space runs
+low. Resolves to whether it agreed, and never rejects.
 
 ## Server-side rendering
 
@@ -156,6 +202,28 @@ writes return `false` and report `STORAGE_UNAVAILABLE`. This stops one request's
 [SECURITY.md](SECURITY.md#on-a-server).
 
 For Node scripts and tests, use `createStore({ storage: createMemoryAdapter() })`.
+
+## Compression
+
+A separate entry point, `opendb-store/compress`. Script tags use `dist/compress-umd.min.js` and the global
+`dbCompress`.
+
+```ts
+import { compressed, compress, decompress } from 'opendb-store/compress';
+
+createStore({ serializer: compressed({ minLength: 1024, maxLength: 50_000_000 }) });
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `minLength` | `1024` | Values whose JSON is shorter are stored as they are |
+| `maxLength` | `50000000` | Largest decompressed value accepted, in characters. Larger ones report `CORRUPT_VALUE` |
+
+Compressed entries are stored as `{"value":"<compressed>","z":1,"expire":…}`, so expiry stays readable.
+`compress` and `decompress` are also exported for your own use. `decompress` throws on damaged input or past
+`maxLength`.
+
+Use it with local and session stores. It is not designed for cookies or IndexedDB.
 
 ## IndexedDB
 
@@ -173,7 +241,8 @@ const files = createIndexedStore({ namespace: 'files', database: 'my-app' });
 to `opendb-store`. Passing `storage: 'indexeddb'` to `createStore` is an error, because the return type differs.
 
 A store has the same members as the others, except that each method returns a promise that never rejects and
-`count` is a promise. `subscribe` is the exception: it returns its unsubscribe function directly. Stores also have
+`count` is a promise. It also has `setMany(items, options?)`, `getMany(keys)`, and `removeMany(keys)`, which work
+in one transaction; `setMany` writes all values or none. `subscribe` is the exception: it returns its unsubscribe function directly. Stores also have
 `async: true` and `database`. Query helpers and debug tools accept these stores and return promises.
 
 **What differs from the other stores**

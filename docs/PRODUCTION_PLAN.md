@@ -62,6 +62,8 @@ Phase 1 starts.
 | D7 | **Move `pick`, `omit`, `pluck`, `where`, `findWhere` to `opendb-store/query`, and debug tools to `opendb-store/debug`.** | They are optional; most production users should not pay for them. |
 | D8 | **Support cookies with the same API,** as `db.cookie`. (Reversed by the owner; the first plan dropped them.) | One API across storage types. Cookie limits are enforced and reported rather than hidden. |
 | D12 | **Add IndexedDB as `opendb-store/indexeddb`, with promise-returning methods.** (Added by the owner.) | It is asynchronous by nature. A separate entry keeps the core small and keeps `debug(db)` synchronous. |
+| D13 | **Read expiry from the end of stored text instead of decoding values.** | Listing and counting at full storage were dominated by decoding values they did not need. |
+| D14 | **Offer compression as `opendb-store/compress`, a serializer.** | It trades milliseconds for several times more room, so it must be a choice, and the core stays unaware of it. |
 | D9 | **Keep zero runtime dependencies** and enforce it in CI. | It is the library's main selling point. |
 | D10 | **Keep Rollup; replace Jest with Vitest.** Remove Webpack and Babel. | Vitest runs TypeScript natively and has a real-browser mode. The Webpack configs are unused. |
 
@@ -122,7 +124,7 @@ compile under `bundler` and `nodenext`, and a plain import in Node without `wind
 - [x] Add a contract suite run against every adapter (local, session, memory).
 - [x] Run the suite in real Chromium, Firefox, and WebKit through Playwright.
 - [x] Enforce coverage of at least 95% lines and 90% branches.
-- [x] Add a bundle budget with `size-limit`: 3.9 kB gzipped for the core. (The first guess was 2 kB. The full API with cookies, subscriptions, migrations, and security hardening measures 3.79 kB, and a pre-release version string adds a few bytes, so the budget is 3.9 kB.)
+- [x] Add a bundle budget with `size-limit`: 4.2 kB gzipped for the core. (The first guess was 2 kB. The full API with cookies, subscriptions, migrations, and security hardening measures 3.79 kB, and a pre-release version string adds a few bytes, so the budget was 3.9 kB. Reading metadata without decoding added about 250 bytes, so it is now 4.2 kB.)
 
 **Exit:** CI fails on a coverage drop, a size overrun, or a failure in any browser.
 
@@ -166,7 +168,7 @@ Each feature must fit inside the size budget. If one does not, it becomes a sepa
 
 ## 5. Definition of done
 
-- Zero runtime dependencies, and at most 3.9 kB gzipped for the core.
+- Zero runtime dependencies, and at most 4.2 kB gzipped for the core.
 - Importing in Node without `window` does not throw.
 - ESM, CJS, the browser global, and TypeScript all resolve, verified in CI.
 - Tests pass in Chromium, Firefox, and WebKit, with the coverage gate on.
@@ -183,3 +185,34 @@ Each feature must fit inside the size budget. If one does not, it becomes a sepa
 | `clear()` scoping surprises someone relying on a full wipe | Called out in the migration guide; the raw `storage` object remains available |
 | Scope creep from Phase 5 delays the fixes | Phases 0 to 4 and 6 can ship as 3.0 alone; Phase 5 can follow as 3.1 |
 | Browser quota behaviour differs | Real-browser tests; quota is never hard-coded as fact, only reported from observed errors |
+
+## 7. Post-review backlog (2026-11-10)
+
+The senior review produced 24 items. Status:
+
+| # | Item | Status |
+| --- | --- | --- |
+| 1 | Commit pending work | Done |
+| 2 | npm trusted publishing, vulnerability reporting, branch protection | Owner: see DEVELOPMENT.md |
+| 3 | Publish `3.0.0-next.1` | Pending owner approval to push |
+| 4 | Real devices | Emulated iPhone and Pixel checks added; real devices remain for the owner |
+| 5 | Tests for medium-risk coverage gaps | Done |
+| 6 | Mutation testing | Done: `npm run test:mutation`, weekly in CI |
+| 7 | Coverage in real browsers | Done: `npm run test:coverage:all` |
+| 8 | Property-based tests | Done: `tests/properties.test.ts` |
+| 9 | Type tests and API report | Done: `tests/types.test.ts`, `api/` |
+| 10 | Committed benchmarks | Done: `bench/`, weekly in CI |
+| 11 | Flaky-test protection | Done: CI retries browser tests twice |
+| 12 | IndexedDB batches | Done: `setMany`, `getMany`, `removeMany` |
+| 13 | Native compression for IndexedDB | Declined: needs async work inside transactions, which would break atomic `patch` and migrations; IndexedDB space is rarely the constraint |
+| 14 | Size-limited cache | Done: `opendb-store/cache` |
+| 15 | Validation on read | Done: `validate` option |
+| 16 | Repository hardening | Scorecard workflow added; account settings are the owner's |
+| 17 | Content Security Policy check | Done: `npm run test:csp` |
+| 18 | IndexedDB encryption | Declined: Web Crypto is async, which breaks atomic `patch` the same way as item 13, and the key would live on the same origin as any attacker script |
+| 19 | React hook | Done: `opendb-store/react` |
+| 20 | Cookie changes across tabs | Done: CookieStore API where available |
+| 21 | `requestPersistence()` | Done |
+| 22 | Generated API docs and hosted examples | Done: `npm run docs:api`, `pages.yml`; the owner enables Pages |
+| 23 | IndexedDB layout upgrades | Done: versioned upgrade steps, and newer layouts open read-compatibly |
+| 24 | Older-browser build | Declined: ES2020 covers every browser released since 2020; checked by parsing the build |

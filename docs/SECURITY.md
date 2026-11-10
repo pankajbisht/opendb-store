@@ -25,10 +25,17 @@ Expiry is enforced by the library only; the data stays readable until it is remo
 IndexedDB is readable by any script on your origin, and it is not encrypted. The `serializer` option can encrypt
 values, but it runs synchronously and leaves expiry readable. On a server it keeps nothing, as with the other stores.
 
+## Compression
+
+Compressed values are no more private than plain ones; compression is not encryption. Decompression checks every
+character and code, and refuses to produce more than `maxLength` characters, 50 million by default. A tampered
+value therefore fails with `CORRUPT_VALUE` instead of using up memory.
+
 ## Treat stored data as untrusted input
 
 Users, browser extensions, and other scripts can change stored values. Validate anything you read before
-using it for authorization or rendering it as HTML.
+using it for authorization or rendering it as HTML. The `validate` option does this on every read, for example
+with a Zod schema.
 
 The library protects itself against tampered data: non-numeric expiry and version fields are ignored, stored
 `__proto__` keys cannot change an object's prototype, and query helpers read own fields only. It cannot tell
@@ -46,6 +53,11 @@ request cannot reach another.
 
 If you pass `createMemoryAdapter()` yourself, that memory lives as long as the store. Do not share such a store
 between requests.
+
+## Content Security Policy
+
+The library never uses `eval`, `new Function`, or HTML injection. `npm run test:csp` loads every browser bundle
+under `script-src 'self'` with Trusted Types enforced, in Chromium, Firefox, and WebKit.
 
 ## Reporting a vulnerability
 

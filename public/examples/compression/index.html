@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compression | opendb-store</title>
+    <link rel="stylesheet" href="../../shared/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "opendb-store": "../../../dist/opendb-esm.js",
+          "opendb-store/query": "../../../dist/query.js",
+          "opendb-store/debug": "../../../dist/debug.js",
+          "opendb-store/indexeddb": "../../../dist/indexeddb.js",
+          "opendb-store/compress": "../../../dist/compress.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../">All examples</a>
+      <h1>Compression</h1>
+      <p>Fit far more into localStorage by compressing large values. It costs a few milliseconds per read and write.</p>
+      <div class="row">
+        <button id="save">Save 2,000 products both ways</button>
+        <button id="fill">Fill storage both ways</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <table id="results">
+        <thead><tr><th></th><th>Plain JSON</th><th>Compressed</th></tr></thead>
+        <tbody>
+          <tr><th>Stored size</th><td id="plain-size">-</td><td id="packed-size">-</td></tr>
+          <tr><th>Write time</th><td id="plain-write">-</td><td id="packed-write">-</td></tr>
+          <tr><th>Read time</th><td id="plain-read">-</td><td id="packed-read">-</td></tr>
+          <tr><th>Products that fit</th><td id="plain-fit">-</td><td id="packed-fit">-</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">Filling storage takes a few seconds and clears itself afterwards.</p>
+      <p class="source">Source: <code>public/examples/compression/main.js</code></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
