@@ -1,7 +1,7 @@
 import { isExpired, sanitizeEntry, type Entry } from '../codec/entry';
 import { createKeyCodec, normalizeKey } from '../codec/key';
 import { isQuotaError } from '../errors';
-import { requireKey } from '../operations/internal';
+import { accepts, requireKey } from '../operations/internal';
 import { isPlainObject } from '../operations/patch';
 import { buildEntry } from '../operations/set';
 import { format } from '../operations/size';
@@ -43,17 +43,20 @@ export function createIndexedStore(
     defaultTTL,
     version,
     migrate,
+    validate,
     serializer,
     onError,
   } = options;
 
   assertCommonOptions(namespace, separator, defaultTTL, version, migrate);
   assertOption(isNonEmptyString(database), 'database');
+  assertOption(!validate || typeof validate === 'function', 'validate');
 
   const report = createReporter(onError);
   const keyCodec = createKeyCodec(namespace, separator);
   const prefix = keyCodec.build('');
   const writeContext = { report, defaultTTL, version };
+  const readContext = { report, validate };
 
   let resolved: Promise<Backend> | undefined;
   const backend = (): Promise<Backend> => {
@@ -165,7 +168,7 @@ export function createIndexedStore(
     rawKey: string,
     reportCorrupt = false
   ): Promise<Entry | undefined> {
-    const record = await (await backend()).read(rawKey);
+    const [record] = await (await backend()).readMany([rawKey]);
     const entry = toEntry(rawKey, record, reportCorrupt);
 
     if (!entry) return undefined;
@@ -174,7 +177,7 @@ export function createIndexedStore(
     return (await refresh([rawKey])).get(rawKey);
   }
 
-  async function liveEntries(): Promise<[string, Entry][]> {
+  async function liveEntries(validated = true): Promise<[string, Entry][]> {
     const rows = await (await backend()).scan(prefix);
     const stale: string[] = [];
     const entries = new Map<string, Entry>();
@@ -194,7 +197,10 @@ export function createIndexedStore(
 
     return rows.flatMap(([rawKey]): [string, Entry][] => {
       const entry = entries.get(rawKey);
-      return entry ? [[keyCodec.parse(rawKey), entry]] : [];
+      const key = keyCodec.parse(rawKey);
+      const keep =
+        entry && (!validated || accepts(readContext, key, entry.value));
+      return keep ? [[key, entry]] : [];
     });
   }
 
@@ -216,36 +222,118 @@ export function createIndexedStore(
     return false;
   }
 
-  async function writeEntry(
-    rawKey: string,
-    entry: Entry,
+  /** Writes entries in one transaction: all of them, or none on failure. */
+  async function commit(
+    entries: [string, Entry][],
     origin?: Subscription
   ): Promise<boolean> {
-    let record: StoredRecord;
+    const records: [string, StoredRecord][] = [];
 
-    try {
-      record = toRecord(entry);
-    } catch (error) {
-      report('SERIALIZE_FAILED', `Cannot store "${rawKey}"`, rawKey, error);
-      return false;
+    for (const [rawKey, entry] of entries) {
+      try {
+        records.push([rawKey, toRecord(entry)]);
+      } catch (error) {
+        report('SERIALIZE_FAILED', `Cannot store "${rawKey}"`, rawKey, error);
+        return false;
+      }
     }
+
+    const rawKeys = records.map(([rawKey]) => rawKey);
 
     try {
       const found = await backend();
 
       try {
-        await found.write(rawKey, record);
+        await found.write(records);
       } catch (error) {
         // Dead entries may be what is filling the storage.
         if (!isQuotaError(error) || !(await purge())) throw error;
-        await found.write(rawKey, record);
+        await found.write(records);
       }
 
-      announce(database, [rawKey], origin);
+      announce(database, rawKeys, origin);
       return true;
     } catch (error) {
-      return reportWriteFailure(rawKey, error);
+      return reportWriteFailure(rawKeys.join(', '), error);
     }
+  }
+
+  async function setMany(
+    items: Record<string, unknown> | [Key, unknown][],
+    opts?: SetOptions
+  ): Promise<boolean> {
+    const origin = activeSubscription();
+    const pairs = Array.isArray(items) ? items : Object.entries(items);
+    const entries: [string, Entry][] = [];
+
+    for (const [key, value] of pairs) {
+      const normalized = requireKey(writeContext, key);
+      if (normalized === undefined) return false;
+
+      const entry = buildEntry(writeContext, normalized, value, opts);
+      if (!entry) return false;
+
+      entries.push([keyCodec.build(normalized), entry]);
+    }
+
+    return entries.length ? commit(entries, origin) : true;
+  }
+
+  async function getMany(keys: Key[]): Promise<unknown[]> {
+    const rawKeys = keys.map((key) => {
+      const normalized = normalizeKey(key);
+      return normalized === undefined ? undefined : keyCodec.build(normalized);
+    });
+
+    return guard(
+      keys.map(() => null),
+      async () => {
+        const wanted = rawKeys.filter(
+          (key): key is string => key !== undefined
+        );
+        const records = await (await backend()).readMany(wanted);
+        const entries = new Map<string, Entry>();
+        const stale: string[] = [];
+
+        wanted.forEach((rawKey, index) => {
+          const entry = toEntry(rawKey, records[index], true);
+          if (!entry) return;
+          if (isExpired(entry) || needsUpgrade(entry)) stale.push(rawKey);
+          else entries.set(rawKey, entry);
+        });
+
+        if (stale.length) {
+          (await refresh(stale)).forEach((entry, rawKey) =>
+            entries.set(rawKey, entry)
+          );
+        }
+
+        return rawKeys.map((rawKey) => {
+          const entry = rawKey === undefined ? undefined : entries.get(rawKey);
+          const key = rawKey === undefined ? '' : keyCodec.parse(rawKey);
+          return entry && accepts(readContext, key, entry.value)
+            ? entry.value
+            : null;
+        });
+      }
+    );
+  }
+
+  async function removeMany(keys: Key[]): Promise<void> {
+    const origin = activeSubscription();
+    const rawKeys: string[] = [];
+
+    for (const key of keys) {
+      const normalized = requireKey(writeContext, key);
+      if (normalized !== undefined) rawKeys.push(keyCodec.build(normalized));
+    }
+
+    await guard(undefined, async () => {
+      await (
+        await backend()
+      ).update(rawKeys, (_, record) => (record === undefined ? KEEP : DELETE));
+      announce(database, rawKeys, origin);
+    });
   }
 
   async function set(
@@ -259,7 +347,7 @@ export function createIndexedStore(
 
     const entry = buildEntry(writeContext, normalized, value, opts);
     return entry
-      ? writeEntry(keyCodec.build(normalized), entry, origin)
+      ? commit([[keyCodec.build(normalized), entry]], origin)
       : false;
   }
 
@@ -290,10 +378,14 @@ export function createIndexedStore(
         const entry = live.get(rawKey);
 
         if (!entry) {
-          const created = buildEntry(writeContext, normalized, partial);
-          patched = Boolean(created);
-          return created ? toRecord(created) : settled;
+          // A plain object always builds, so this cannot be undefined.
+          patched = true;
+          return toRecord(
+            buildEntry(writeContext, normalized, partial) as Entry
+          );
         }
+
+        if (!accepts(readContext, normalized, entry.value)) return settled;
 
         if (!isPlainObject(entry.value)) {
           report(
@@ -336,13 +428,18 @@ export function createIndexedStore(
       });
       announce(database, [rawKey], origin);
 
-      return live.get(rawKey)?.value ?? null;
+      const previous = live.get(rawKey);
+      return previous && accepts(readContext, normalized, previous.value)
+        ? previous.value
+        : null;
     });
   }
 
   // Records are decoded so this always agrees with `has` and `get`.
   const keys = (): Promise<string[]> =>
-    guard<string[]>([], async () => (await liveEntries()).map(([key]) => key));
+    guard<string[]>([], async () =>
+      (await liveEntries(false)).map(([key]) => key)
+    );
 
   const estimateUsed = async (): Promise<number> =>
     (await liveEntries()).reduce(
@@ -399,9 +496,14 @@ export function createIndexedStore(
         if (normalized === undefined) return defaultValue;
 
         const entry = await readEntry(keyCodec.build(normalized), true);
-        return entry ? entry.value : defaultValue;
+        return entry && accepts(readContext, normalized, entry.value)
+          ? entry.value
+          : defaultValue;
       }),
     set,
+    setMany,
+    getMany,
+    removeMany,
     has: (key: Key) =>
       guard(false, async () => {
         const normalized = normalizeKey(key);

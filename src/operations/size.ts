@@ -1,7 +1,7 @@
 import { normalizeKey } from '../codec/key';
 import type { Context } from '../context';
 import type { FormatOptions, Key } from '../types';
-import { allRawKeys, rawKeys, rawLength, readEntry } from './internal';
+import { allRawKeys, rawKeys, rawLength, readMeta } from './internal';
 
 // Browsers limit storage by UTF-16 code units, so sizes are measured in those.
 // The real limit varies by browser and cannot be queried; this is an estimate.
@@ -47,12 +47,12 @@ const capacityOf = (ctx: Context, options?: FormatOptions): number =>
 
 export function ttl(ctx: Context, key: Key): number | null {
   const normalized = normalizeKey(key);
-  const entry =
+  const meta =
     normalized === undefined
       ? undefined
-      : readEntry(ctx, ctx.keyCodec.build(normalized));
+      : readMeta(ctx, ctx.keyCodec.build(normalized));
 
-  return entry?.expire === undefined ? null : entry.expire - Date.now();
+  return meta?.expire === undefined ? null : meta.expire - Date.now();
 }
 
 export function size(
@@ -63,7 +63,7 @@ export function size(
   const normalized = normalizeKey(key);
   const rawKey =
     normalized === undefined ? undefined : ctx.keyCodec.build(normalized);
-  const live = rawKey !== undefined && readEntry(ctx, rawKey) !== undefined;
+  const live = rawKey !== undefined && readMeta(ctx, rawKey) !== undefined;
 
   return format(live ? rawLength(ctx, rawKey) : 0, options);
 }

@@ -397,3 +397,40 @@ describe.each(backends)('contract: %s', (_name, storage, raw) => {
     });
   });
 });
+
+describe('reading metadata stays exact', () => {
+  test('has, keys, ttl, and get agree on unusual stored text', () => {
+    const memory = createMemoryAdapter();
+    const store = createStore({ storage: memory, onError: () => {} });
+    memory.setItem('app.nested', '{"value":{"expire":5}}');
+    memory.setItem(
+      'app.real',
+      '{"value":{"expire":5},"expire":99999999999999}'
+    );
+    memory.setItem(
+      'app.gone',
+      '{"value":{"expire":99999999999999},"expire":1}'
+    );
+
+    expect(store.keys().sort()).toEqual(['nested', 'real']);
+    expect(store.has('nested')).toBe(true);
+    expect(store.ttl('nested')).toBeNull();
+    expect(store.get('nested')).toEqual({ expire: 5 });
+    expect(store.ttl('real')).toBeGreaterThan(0);
+    expect(store.has('gone')).toBe(false);
+    expect(memory.getItem('app.gone')).toBeNull();
+  });
+
+  test('has still applies migrations that discard entries', () => {
+    const memory = createMemoryAdapter();
+    memory.setItem('app.k', '{"value":1}');
+    const store = createStore({
+      storage: memory,
+      version: 2,
+      migrate: () => undefined,
+    });
+
+    expect(store.has('k')).toBe(false);
+    expect(store.keys()).toEqual([]);
+  });
+});

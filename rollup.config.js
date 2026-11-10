@@ -58,8 +58,37 @@ export default [
       { ...base, file: 'dist/indexeddb-umd.js', format: 'umd', name: 'dbIndexed' },
     ],
   },
+  {
+    input: 'src/compress.ts',
+    plugins: [compile()],
+    output: [
+      { ...base, file: 'dist/compress.js', format: 'es' },
+      { ...base, file: 'dist/compress.cjs', format: 'cjs' },
+      { ...base, file: 'dist/compress-umd.js', format: 'umd', name: 'dbCompress' },
+    ],
+  },
+  {
+    input: 'src/cache.ts',
+    plugins: [compile()],
+    output: [
+      { ...base, file: 'dist/cache.js', format: 'es' },
+      { ...base, file: 'dist/cache.cjs', format: 'cjs' },
+    ],
+  },
+  {
+    input: 'src/react.ts',
+    external: ['react'],
+    plugins: [compile()],
+    output: [
+      { ...base, file: 'dist/react.js', format: 'es' },
+      { ...base, file: 'dist/react.cjs', format: 'cjs' },
+    ],
+  },
   declarations('src/index.ts', 'index'),
   declarations('src/query.ts', 'query'),
   declarations('src/debug.ts', 'debug'),
   declarations('src/indexeddb/index.ts', 'indexeddb'),
+  declarations('src/compress.ts', 'compress'),
+  declarations('src/cache.ts', 'cache'),
+  { ...declarations('src/react.ts', 'react'), external: ['react'] },
 ];

@@ -33,11 +33,26 @@ export interface DebugOptions {
   label?: string;
 }
 
-type AnyStore = Store | AsyncStore;
-type StoreMap = Record<string, Store>;
-type AnyStoreMap = Record<string, AnyStore>;
+export type AnyStore = Store | AsyncStore;
+export type StoreMap = Record<string, Store>;
+export type AnyStoreMap = Record<string, AnyStore>;
 
 const round = (value: number): number => Math.round(value * 100) / 100;
+
+// Reading a value this large from local or session storage blocks the page.
+const LARGE_ENTRY = 512 * 1024;
+
+function warnLarge(report: StoreReport, label: string): void {
+  const large = report.entries.filter((entry) => entry.size > LARGE_ENTRY);
+  if (!large.length) return;
+
+  console.warn(
+    `[opendb-store] ${label}: ${large.map((entry) => entry.key).join(', ')} ` +
+      `${large.length === 1 ? 'is' : 'are'} over 512 KB. Reading ` +
+      `${large.length === 1 ? 'it' : 'them'} blocks the page; ` +
+      'consider IndexedDB or compression.'
+  );
+}
 
 function formatSize(size: number): string {
   if (size < 1024) return `${size} B`;
@@ -185,6 +200,7 @@ export function debug(
   ): StoreReport | Promise<StoreReport> => {
     const finish = (report: StoreReport): StoreReport => {
       print(report, name, warnAt);
+      if (!isAsync(store)) warnLarge(report, name);
       return report;
     };
 

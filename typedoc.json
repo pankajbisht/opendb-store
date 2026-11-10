@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "opendb-store",
+  "entryPoints": [
+    "src/index.ts",
+    "src/indexeddb/index.ts",
+    "src/compress.ts",
+    "src/cache.ts",
+    "src/query.ts",
+    "src/debug.ts",
+    "src/react.ts"
+  ],
+  "out": "site/api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true
+}

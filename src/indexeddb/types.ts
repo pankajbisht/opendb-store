@@ -18,6 +18,15 @@ export interface AsyncStore {
   get<T = unknown>(key: Key): Promise<T | null>;
   get<T>(key: Key, defaultValue: T): Promise<T>;
   set(key: Key, value: unknown, options?: SetOptions): Promise<boolean>;
+  /** Writes many values in one transaction: all of them, or none on failure. */
+  setMany(
+    items: Record<string, unknown> | [Key, unknown][],
+    options?: SetOptions
+  ): Promise<boolean>;
+  /** Reads many values in one transaction, in the order given. */
+  getMany<T = unknown>(keys: Key[]): Promise<(T | null)[]>;
+  /** Removes many keys in one transaction. */
+  removeMany(keys: Key[]): Promise<void>;
   has(key: Key): Promise<boolean>;
   /** Atomically merges into a stored object, keeping its expiry. */
   patch(key: Key, partial: Record<string, unknown>): Promise<boolean>;

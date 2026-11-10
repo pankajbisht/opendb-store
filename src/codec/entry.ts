@@ -39,10 +39,47 @@ export function sanitizeEntry(data: unknown): Entry | undefined {
   return data;
 }
 
-export function isExpired(entry: Entry): boolean {
+export function isExpired(entry: EntryMeta): boolean {
   return entry.expire !== undefined && Date.now() > entry.expire;
 }
 
 export function isValidTTL(ttl: unknown): ttl is number {
   return typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0;
+}
+
+export interface EntryMeta {
+  expire?: number;
+  v?: number;
+}
+
+const ENTRY_START = '{"value":';
+// The metadata this library writes after the value, in this order.
+const ENTRY_END =
+  /(?:,"z":1)?(?:,"expire":(-?[\d.eE+-]+))?(?:,"v":(-?[\d.eE+-]+))?\}$/;
+
+/**
+ * Reads expiry and version from the end of a stored entry without decoding its
+ * value. Returns `undefined` whenever that is not certain, so the caller
+ * decodes the whole entry instead.
+ */
+export function peekMeta(raw: string): EntryMeta | undefined {
+  if (!raw.startsWith(ENTRY_START)) return undefined;
+
+  const tail = raw.slice(-96);
+  const match = ENTRY_END.exec(tail);
+  if (!match) return undefined;
+
+  const [, expire, v] = match;
+
+  // A value can contain its own "expire" or "v" key near the end.
+  if (expire === undefined && tail.includes('"expire"')) return undefined;
+  if (v === undefined && tail.includes('"v"')) return undefined;
+
+  const meta: EntryMeta = {};
+  if (expire !== undefined) meta.expire = Number(expire);
+  if (v !== undefined) meta.v = Number(v);
+
+  return Number.isFinite(meta.expire ?? 0) && Number.isFinite(meta.v ?? 0)
+    ? meta
+    : undefined;
 }

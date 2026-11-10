@@ -155,13 +155,35 @@ describe('debug tools', () => {
 
     test('stays quiet below the threshold and honours warnAt', () => {
       const s = store();
-      s.set('k', 'x'.repeat(1_000_000));
+      ['a', 'b', 'c'].forEach((key) => s.set(key, 'x'.repeat(300_000)));
 
       debug(s);
       expect(warn).not.toHaveBeenCalled();
 
       debug(s, { warnAt: 10 });
       expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    test('warns about entries large enough to block the page', () => {
+      const s = store();
+      s.set('big', 'x'.repeat(600 * 1024));
+      s.set('bigger', 'x'.repeat(700 * 1024));
+      s.set('small', 1);
+
+      debug(s);
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('bigger, big are over 512 KB')
+      );
+    });
+
+    test('names a single large entry in the singular', () => {
+      const s = store();
+      s.set('big', 'x'.repeat(600 * 1024));
+      debug(s);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('big is over 512 KB. Reading it')
+      );
     });
 
     test('accepts the default db object and reports each store', () => {

@@ -6,7 +6,8 @@ export type StoreErrorCode =
   | 'INVALID_KEY'
   | 'INVALID_ARGUMENT'
   | 'MIGRATION_FAILED'
-  | 'LISTENER_FAILED';
+  | 'LISTENER_FAILED'
+  | 'VALIDATION_FAILED';
 
 export class StoreError extends Error {
   readonly code: StoreErrorCode;

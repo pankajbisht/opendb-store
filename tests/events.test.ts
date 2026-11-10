@@ -135,8 +135,11 @@ describe('subscribe', () => {
   test('reports a clear from another tab', () => {
     const store = createStore({ namespace: 's' });
     const seen: unknown[] = [];
+    store.set('k', 1);
     const stop = store.subscribe('k', (value) => seen.push(value));
 
+    // As another tab would: clear the storage, then the event arrives.
+    window.localStorage.clear();
     fireStorageEvent(null, window.localStorage);
     stop();
 

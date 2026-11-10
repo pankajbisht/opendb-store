@@ -21,10 +21,11 @@ export default [
     rules: { 'no-console': 'off' },
   },
   {
-    files: ['scripts/**/*.mjs', '*.config.js'],
+    // Node scripts that also send code to run inside browser pages.
+    files: ['scripts/**/*.mjs', 'bench/**/*.mjs', '*.config.js'],
     languageOptions: {
       globals: { console: 'readonly', process: 'readonly' },
     },
-    rules: { 'no-console': 'off' },
+    rules: { 'no-console': 'off', 'no-undef': 'off' },
   },
 ];

@@ -10,8 +10,9 @@ export type Updater = (
 export interface Backend {
   /** True when this is standing in for IndexedDB in a browser. */
   readonly fallback?: boolean;
-  read(rawKey: string): Promise<StoredRecord | undefined>;
-  write(rawKey: string, record: StoredRecord): Promise<void>;
+  readMany(rawKeys: string[]): Promise<(StoredRecord | undefined)[]>;
+  /** Writes every record in one transaction, so either all land or none do. */
+  write(records: [string, StoredRecord][]): Promise<void>;
   /** Reads and rewrites the keys inside one transaction, so it is atomic. */
   update(rawKeys: string[], updater: Updater): Promise<void>;
   scan(prefix: string): Promise<[string, StoredRecord][]>;
@@ -22,6 +23,13 @@ export interface Backend {
 const STORE = 'entries';
 const EXPIRY_INDEX = 'expire';
 const OPEN_TIMEOUT = 5000;
+
+// The database layout version. To change the layout, raise this and append a
+// step to UPGRADES; never edit an existing step, because users may be on it.
+const SCHEMA_VERSION = 1;
+const UPGRADES: ((db: IDBDatabase) => void)[] = [
+  (db) => db.createObjectStore(STORE).createIndex(EXPIRY_INDEX, EXPIRY_INDEX),
+];
 
 function prefixRange(prefix: string): IDBKeyRange {
   const last = prefix.length - 1;
@@ -44,9 +52,12 @@ function createIndexedBackend(
 ): Backend & { ready(): Promise<unknown> } {
   let connection: Promise<IDBDatabase> | undefined;
 
-  function connect(): Promise<IDBDatabase> {
-    connection ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(database, 1);
+  function open(version?: number): Promise<IDBDatabase> {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+      const request =
+        version === undefined
+          ? indexedDB.open(database)
+          : indexedDB.open(database, version);
       let timedOut = false;
 
       // Some browsers can leave an open request unanswered forever.
@@ -55,10 +66,10 @@ function createIndexedBackend(
         reject(new Error('Opening IndexedDB timed out'));
       }, OPEN_TIMEOUT);
 
-      request.onupgradeneeded = () => {
-        request.result
-          .createObjectStore(STORE)
-          .createIndex(EXPIRY_INDEX, EXPIRY_INDEX);
+      request.onupgradeneeded = (event) => {
+        for (let step = event.oldVersion; step < SCHEMA_VERSION; step++) {
+          UPGRADES[step]?.(request.result);
+        }
       };
       request.onerror = () => {
         clearTimeout(timer);
@@ -83,10 +94,21 @@ function createIndexedBackend(
         };
         resolve(db);
       };
-    }).catch((error) => {
-      connection = undefined;
-      throw error;
     });
+  }
+
+  function connect(): Promise<IDBDatabase> {
+    connection ??= open(SCHEMA_VERSION)
+      .catch((error) => {
+        // A newer release may have upgraded the layout. Later layouts must stay
+        // readable, so open whatever version is there.
+        if ((error as Error)?.name === 'VersionError') return open();
+        throw error;
+      })
+      .catch((error) => {
+        connection = undefined;
+        throw error;
+      });
 
     return connection;
   }
@@ -149,14 +171,20 @@ function createIndexedBackend(
   return {
     ready: connect,
 
-    read: (rawKey) =>
-      transact('readonly', ({ store, done, on }) =>
-        on(store.get(rawKey), done)
-      ),
+    readMany: (rawKeys) =>
+      transact('readonly', ({ store, done, on }) => {
+        const records: (StoredRecord | undefined)[] = [];
+        done(records);
+        rawKeys.forEach((rawKey, index) =>
+          on(store.get(rawKey), (record) => {
+            records[index] = record;
+          })
+        );
+      }),
 
-    write: (rawKey, record) =>
+    write: (records) =>
       transact('readwrite', ({ store }) => {
-        store.put(record, rawKey);
+        records.forEach(([rawKey, record]) => store.put(record, rawKey));
       }),
 
     update: (rawKeys, updater) =>
@@ -217,9 +245,13 @@ function createMemoryBackend(): Backend {
 
   return {
     fallback: true,
-    read: async (rawKey) => clone(items.get(rawKey)),
-    async write(rawKey, record) {
-      items.set(rawKey, clone(record));
+    readMany: async (rawKeys) => rawKeys.map((key) => clone(items.get(key))),
+    async write(records) {
+      // Clone everything first, so a value that cannot be cloned writes nothing.
+      const copies = records.map(([key, record]) => [key, clone(record)]);
+      copies.forEach(([key, record]) =>
+        items.set(key as string, record as StoredRecord)
+      );
     },
     async update(rawKeys, updater) {
       for (const rawKey of rawKeys) {
@@ -250,7 +282,7 @@ function createMemoryBackend(): Backend {
 
 // Servers keep nothing: shared memory would leak data between requests.
 const serverBackend: Backend = {
-  read: async () => undefined,
+  readMany: async (rawKeys) => rawKeys.map(() => undefined),
   write: async () => {
     throw new Error('No storage on the server');
   },

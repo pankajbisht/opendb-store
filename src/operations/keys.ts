@@ -1,8 +1,8 @@
 import type { Context } from '../context';
-import { liveEntries } from './internal';
+import { liveEntries, liveKeys } from './internal';
 
 export function keys(ctx: Context): string[] {
-  return liveEntries(ctx).map(([key]) => key);
+  return liveKeys(ctx);
 }
 
 export function keyAt(ctx: Context, index: number): string | null {

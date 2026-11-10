@@ -1,8 +1,35 @@
-import { decodeEntry, isExpired, type Entry } from '../codec/entry';
+import {
+  decodeEntry,
+  isExpired,
+  peekMeta,
+  type Entry,
+  type EntryMeta,
+} from '../codec/entry';
 import { normalizeKey } from '../codec/key';
 import type { Context } from '../context';
 import { isQuotaError } from '../errors';
 import { emit } from './events';
+
+/** Applies the `validate` option, reporting values it rejects. */
+export function accepts(
+  ctx: Pick<Context, 'validate' | 'report'>,
+  key: string,
+  value: unknown
+): boolean {
+  if (!ctx.validate) return true;
+
+  let valid = false;
+  let cause: unknown;
+
+  try {
+    valid = Boolean(ctx.validate(value, key));
+  } catch (error) {
+    cause = error;
+  }
+
+  if (!valid) ctx.report('VALIDATION_FAILED', `Rejected "${key}"`, key, cause);
+  return valid;
+}
 
 /** Normalizes a key for a write, reporting it if invalid. */
 export function requireKey(
@@ -91,6 +118,9 @@ function readCurrent(
   return entry;
 }
 
+const needsUpgrade = (ctx: Context, v: number | undefined): boolean =>
+  Boolean(ctx.version && ctx.migrate && (v ?? 0) < ctx.version);
+
 function upgrade(
   ctx: Context,
   rawKey: string,
@@ -98,7 +128,7 @@ function upgrade(
 ): Entry | undefined {
   const { version, migrate } = ctx;
   const fromVersion = entry.v ?? 0;
-  if (!version || !migrate || fromVersion >= version) return entry;
+  if (!migrate || !needsUpgrade(ctx, entry.v)) return entry;
 
   try {
     const value = migrate(entry.value, fromVersion, ctx.keyCodec.parse(rawKey));
@@ -127,12 +157,54 @@ export function readEntry(
   return entry && upgrade(ctx, rawKey, entry);
 }
 
+/**
+ * Reads only the expiry and version of a live entry. Large values are not
+ * decoded unless the stored text is unusual or the entry needs a migration.
+ */
+export function readMeta(
+  ctx: Context,
+  rawKey: string,
+  migrate = true
+): EntryMeta | undefined {
+  let raw: string | null;
+
+  try {
+    raw = ctx.adapter().getItem(rawKey);
+  } catch {
+    return undefined;
+  }
+
+  const meta = raw === null ? undefined : peekMeta(raw);
+
+  if (!meta) {
+    return raw === null
+      ? undefined
+      : migrate
+        ? readEntry(ctx, rawKey)
+        : readCurrent(ctx, rawKey, false);
+  }
+
+  if (isExpired(meta)) {
+    removeRaw(ctx, rawKey);
+    return undefined;
+  }
+
+  return migrate && needsUpgrade(ctx, meta.v) ? readEntry(ctx, rawKey) : meta;
+}
+
+export function liveKeys(ctx: Context): string[] {
+  return rawKeys(ctx)
+    .filter((rawKey) => readMeta(ctx, rawKey))
+    .map(ctx.keyCodec.parse);
+}
+
 export function liveEntries(ctx: Context): [string, Entry][] {
   const result: [string, Entry][] = [];
 
   for (const rawKey of rawKeys(ctx)) {
     const entry = readEntry(ctx, rawKey);
-    if (entry) result.push([ctx.keyCodec.parse(rawKey), entry]);
+    const key = ctx.keyCodec.parse(rawKey);
+    if (entry && accepts(ctx, key, entry.value)) result.push([key, entry]);
   }
 
   return result;
@@ -140,7 +212,7 @@ export function liveEntries(ctx: Context): [string, Entry][] {
 
 export function purgeExpired(ctx: Context): number {
   const keys = rawKeys(ctx);
-  keys.forEach((rawKey) => readCurrent(ctx, rawKey, false));
+  keys.forEach((rawKey) => readMeta(ctx, rawKey, false));
   return keys.length - rawKeys(ctx).length;
 }
 

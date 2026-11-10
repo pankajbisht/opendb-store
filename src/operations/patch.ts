@@ -1,6 +1,6 @@
 import type { Context } from '../context';
 import type { Key } from '../types';
-import { readEntry, requireKey, writeEntry } from './internal';
+import { accepts, readEntry, requireKey, writeEntry } from './internal';
 import { set } from './set';
 
 export function isPlainObject(
@@ -25,6 +25,7 @@ export function patch(
   const rawKey = ctx.keyCodec.build(normalized);
   const entry = readEntry(ctx, rawKey);
   if (!entry) return set(ctx, normalized, partial);
+  if (!accepts(ctx, normalized, entry.value)) return false;
 
   if (!isPlainObject(entry.value)) {
     ctx.report(

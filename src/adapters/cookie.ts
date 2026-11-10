@@ -105,5 +105,23 @@ export function createCookieAdapter(
     },
     removeItem: (key) => write(`${encode(key)}=`, '; Max-Age=0'),
     measure: (key, value) => encode(key).length + encode(value).length,
+    watch(onChange) {
+      // The CookieStore API reports changes from other tabs, where supported.
+      const cookies = (globalThis as { cookieStore?: EventTarget }).cookieStore;
+      if (!cookies) return () => {};
+
+      const listener = (event: Event): void => {
+        const { changed = [], deleted = [] } = event as Event & {
+          changed?: { name: string }[];
+          deleted?: { name: string }[];
+        };
+        [...changed, ...deleted].forEach((cookie) =>
+          onChange(decodeName(cookie.name))
+        );
+      };
+
+      cookies.addEventListener('change', listener);
+      return () => cookies.removeEventListener('change', listener);
+    },
   };
 }

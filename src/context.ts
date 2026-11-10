@@ -9,6 +9,7 @@ export interface Context {
   defaultTTL?: number;
   version?: number;
   migrate?: StoreOptions['migrate'];
+  validate?: StoreOptions['validate'];
   report(
     code: StoreErrorCode,
     message: string,

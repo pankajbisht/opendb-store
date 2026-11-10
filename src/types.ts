@@ -18,6 +18,11 @@ export interface StorageAdapter {
   getItem(key: string): string | null;
   setItem(key: string, value: string, meta?: WriteMeta): void;
   removeItem(key: string): void;
+  /**
+   * Calls `onChange` with a raw key, or `null` for everything, when another
+   * tab changes storage. Returns a function that stops watching.
+   */
+  watch?(onChange: (rawKey: string | null) => void): () => void;
   /** Size of one entry. Defaults to the UTF-16 length of key and value. */
   measure?(key: string, value: string): number;
 }
@@ -60,6 +65,12 @@ export interface StoreOptions {
   migrate?: (value: any, fromVersion: number, key: string) => unknown;
   /** Replaces JSON. Receives the whole `{ value, expire }` entry. */
   serializer?: Serializer;
+  /**
+   * Checks each value as it is read. Values it rejects read as missing and
+   * report `VALIDATION_FAILED`. Stored data can be edited, so use this for
+   * anything you trust.
+   */
+  validate?: (value: unknown, key: string) => boolean;
   /** Receives every failure. Without it, failures go to `console.warn`. */
   onError?: (error: StoreError) => void;
 }

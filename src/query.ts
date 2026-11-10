@@ -1,9 +1,9 @@
 import type { Key } from './types';
 
 /** A synchronous store, or an IndexedDB store whose results are promises. */
-type Reader = { get(key: Key): unknown; readonly async?: boolean };
-type Item = Record<string, unknown>;
-type Result<S, T> = S extends { async: true } ? Promise<T> : T;
+export type Reader = { get(key: Key): unknown; readonly async?: boolean };
+export type Item = Record<string, unknown>;
+export type Result<S, T> = S extends { async: true } ? Promise<T> : T;
 
 function using<S extends Reader, T>(
   store: S,

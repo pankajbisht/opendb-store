@@ -4,3 +4,6 @@ dist/
 jest-report.html
 .DS_Store
 .vitest/
+site/
+reports/
+.stryker-tmp/

@@ -33,6 +33,7 @@ export function createStore(options: StoreOptions = {}): Store {
     defaultTTL,
     version,
     migrate,
+    validate,
     serializer = jsonSerializer,
     onError,
   } = options;
@@ -40,6 +41,7 @@ export function createStore(options: StoreOptions = {}): Store {
   assertCommonOptions(namespace, separator, defaultTTL, version, migrate);
   assertOption(isStorageOption(storage), 'storage');
   assertOption(!cookie || isValidCookieOptions(cookie), 'cookie');
+  assertOption(!validate || typeof validate === 'function', 'validate');
 
   const report = createReporter(onError);
 
@@ -60,6 +62,7 @@ export function createStore(options: StoreOptions = {}): Store {
     defaultTTL,
     version,
     migrate,
+    validate,
     report,
   };
 

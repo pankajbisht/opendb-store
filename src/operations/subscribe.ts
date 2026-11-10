@@ -14,12 +14,27 @@ export function subscribe(
   const rawKey = ctx.keyCodec.build(normalized);
   let running = false;
 
+  const readRaw = (): string | null => {
+    try {
+      return ctx.adapter().getItem(rawKey);
+    } catch {
+      return null;
+    }
+  };
+
+  // Listeners hear about changes, so an identical rewrite is not reported.
+  let last = readRaw();
+
   return addSubscription({
     ctx,
     rawKey,
     notify() {
       // A listener that writes its own key must not recurse without end.
       if (running) return;
+
+      const raw = readRaw();
+      if (raw === last) return;
+      last = raw;
       running = true;
 
       // A failing listener must not break the write that triggered it.
