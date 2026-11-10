@@ -3,7 +3,9 @@
 **One small, typed API for `localStorage`, `sessionStorage`, cookies, and IndexedDB.** Namespaces, expiry, cross-tab
 updates, schema migrations, and a storage size inspector, with no dependencies.
 
-[![npm](https://img.shields.io/npm/v/opendb-store)](https://www.npmjs.com/package/opendb-store)
+[![npm version](https://img.shields.io/npm/v/opendb-store)](https://www.npmjs.com/package/opendb-store)
+[![types included](https://img.shields.io/npm/types/opendb-store)](https://www.npmjs.com/package/opendb-store)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](package.json)
 [![license](https://img.shields.io/npm/l/opendb-store)](LICENSE)
 
 ```js
@@ -32,6 +34,9 @@ db.session.set('checkoutStep', 2);
 
 The core is about 4.5 kB gzipped. IndexedDB, compression, the cache, React, query helpers, and the debug tool
 are separate imports, so they cost nothing unless you use them.
+
+Works in every modern browser, with React, Angular, Vue, Next.js, and plain JavaScript. Tested in Chromium,
+Firefox, and WebKit.
 
 ## Install
 
@@ -604,6 +609,54 @@ schema migration, error handling, IndexedDB, compression, a storage size debugge
 npm install
 npm run demo
 ```
+
+## Coming from another library?
+
+Each of these does one part of what opendb-store does. Here is how the same code looks.
+
+**js-cookie**
+
+```js
+Cookies.set('theme', 'dark', { expires: 7 }); // days
+Cookies.get('theme');
+Cookies.remove('theme');
+
+db.cookie.set('theme', 'dark', { expire: 7 * 24 * 60 * 60 * 1000 }); // milliseconds
+db.cookie.get('theme');
+db.cookie.remove('theme');
+```
+
+**localForage**
+
+```js
+await localforage.setItem('report', report);
+await localforage.getItem('report');
+
+import { indexed } from 'opendb-store/indexeddb';
+await indexed.set('report', report);
+await indexed.get('report');
+```
+
+**store2**
+
+```js
+store('user', user);
+store.namespace('admin').set('flags', flags);
+
+db.local.set('user', user);
+createStore({ namespace: 'admin' }).set('flags', flags);
+```
+
+**lscache**
+
+```js
+lscache.set('products', products, 5); // minutes
+
+db.local.set('products', products, { expire: 5 * 60 * 1000 }); // milliseconds
+```
+
+Values written by other libraries are not read automatically: opendb-store adds a namespace prefix and stores a
+small wrapper around each value. Migrate data once with your old library's `get` and opendb-store's `set`.
 
 ## Documentation
 
