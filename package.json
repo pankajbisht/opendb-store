@@ -1,6 +1,6 @@
 {
   "name": "opendb-store",
-  "version": "3.0.0-next.1",
+  "version": "3.0.0-next.2",
   "description": "Typed localStorage, sessionStorage, cookie, and IndexedDB wrapper with expiry (TTL), namespaces, cross-tab sync, compression, and SSR safety. Zero dependencies, about 4.5 kB.",
   "main": "./dist/opendb.cjs",
   "module": "./dist/opendb-esm.js",

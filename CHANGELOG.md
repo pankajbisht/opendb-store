@@ -1,3 +1,10 @@
+# [3.0.0-next.2](https://github.com/pankajbisht/opendb-store/compare/v3.0.0-next.1...v3.0.0-next.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* let the API check pass after the release bumps the version ([7d3eb1f](https://github.com/pankajbisht/opendb-store/commit/7d3eb1ff36dc30b491bbe5206fa5ebafc5b4afa2))
+
 # [3.0.0-next.1](https://github.com/pankajbisht/opendb-store/compare/v2.0.1...v3.0.0-next.1) (2026-11-10)
 
 
