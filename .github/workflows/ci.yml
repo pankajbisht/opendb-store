@@ -41,6 +41,18 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:browser
+      - run: npm run build
+      - name: Examples on desktop and emulated phones
+        run: npm run test:examples
+      - name: Strict Content Security Policy
+        run: npm run test:csp
+      - name: Coverage across jsdom and Chromium
+        run: npm run test:coverage:all
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
 
   package:
     name: Package checks

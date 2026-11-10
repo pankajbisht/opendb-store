@@ -57,6 +57,12 @@ try {
        import { where } from 'opendb-store/query';
        import { inspect } from 'opendb-store/debug';
        import { indexed as idb } from 'opendb-store/indexeddb';
+       import { compress, decompress } from 'opendb-store/compress';
+       import { createCache } from 'opendb-store/cache';
+       import { useStored } from 'opendb-store/react';
+       assert.equal(typeof useStored, 'function');
+       assert.equal(createCache(db.local, { maxEntries: 2 }).set('k', 1), false);
+       assert.equal(decompress(compress('hello hello')), 'hello hello');
        ${usage}`
     );
     assert.match(
@@ -77,6 +83,11 @@ try {
        const { where } = require('opendb-store/query');
        const { inspect } = require('opendb-store/debug');
        const { indexed: idb } = require('opendb-store/indexeddb');
+       const { compressed } = require('opendb-store/compress');
+       const { createCache } = require('opendb-store/cache');
+       assert.equal(typeof require('opendb-store/react').useStored, 'function');
+       assert.equal(typeof createCache, 'function');
+       assert.equal(typeof compressed().serialize, 'function');
        const { createStore } = lib;
        assert.ok(lib.default.local);
        const db = lib;
@@ -140,6 +151,13 @@ try {
     import { where } from 'opendb-store/query';
     import { debug, inspect } from 'opendb-store/debug';
     import { createIndexedStore, indexed } from 'opendb-store/indexeddb';
+    import { compressed } from 'opendb-store/compress';
+    import { createCache, type Cache } from 'opendb-store/cache';
+    import { useStored } from 'opendb-store/react';
+    const cache: Cache = createCache(db.local, { maxEntries: 10 });
+    const hook: typeof useStored = useStored;
+    void [cache, hook];
+    createStore({ serializer: compressed({ minLength: 512 }) });
     const idbValue: Promise<string> = indexed.get('k', 'default');
     const idbStore = createIndexedStore({ namespace: 'n', database: 'd' });
     const idbList: Promise<unknown[]> = where(idbStore, 'k', {});
