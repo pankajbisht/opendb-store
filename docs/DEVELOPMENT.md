@@ -73,10 +73,10 @@ Things to know:
 | Workflow | When | What |
 | --- | --- | --- |
 | `ci.yml` | Pull requests, and before every release | Tests on Node 22 and 24, real browsers, examples, CSP, coverage, package checks |
-| `release.yml` | Push to `master` or `next` | CI, then semantic-release with provenance |
+| `release.yml` | Push to `master` or `next`, or Run workflow | CI, then semantic-release with provenance, then checks every place shows the new version. Undoes the tag and release commit if npm did not get it |
 | `codeql.yml` | Pushes, pull requests, weekly | GitHub code scanning |
 | `scorecard.yml` | Push to `master`, weekly | OpenSSF Scorecard supply-chain checks |
-| `pages.yml` | Push to `master` | Publishes the examples and API docs to GitHub Pages |
+| `pages.yml` | After a `master` release, or Run workflow | Publishes the examples and API docs, built from the release tag |
 | `quality.yml` | Weekly, or by hand | Mutation testing and benchmarks, as reports |
 
 ## Repository settings only the owner can change
@@ -99,6 +99,16 @@ Releases are automated by semantic-release, using Conventional Commits:
 
 Pushing to `master` publishes to the `latest` tag once CI passes. Pushing to `next` publishes a pre-release to
 the `next` tag. Do unfinished work on another branch.
+
+A release updates every version together, or none of them: npm, the git tag, the GitHub Release, `package.json`,
+`src/version.ts`, `CHANGELOG.md`, and for `master` the docs site. `scripts/release.sh` enforces this:
+
+- If npm does not get the version, it deletes the tag and reverts the release commit.
+- After a release it checks every place above, and fails the run if one is wrong.
+
+**If a release fails,** fix the cause, then open Actions, Release, Run workflow, and pick the branch. Never use
+"Re-run": it runs the old commit, and the workflow now stops it, because semantic-release would publish nothing
+and still pass.
 
 ## First release of 3.0
 

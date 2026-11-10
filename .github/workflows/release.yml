@@ -1,8 +1,14 @@
 name: Release
 
+# One run puts a version everywhere or nowhere: npm, the git tag, the GitHub Release,
+# package.json, src/version.ts, CHANGELOG.md, and (for master) the docs site.
+# If npm does not get the version, scripts/release.sh removes the tag and release commit.
+# Never use "Re-run" on a failed release. Use "Run workflow" on the branch instead.
+
 on:
   push:
     branches: [master, next]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,6 +20,7 @@ concurrency:
 
 jobs:
   ci:
+    if: github.ref_name == 'master' || github.ref_name == 'next'
     uses: ./.github/workflows/ci.yml
 
   release:
@@ -25,6 +32,10 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write # npm trusted publishing and provenance
+    outputs:
+      version: ${{ steps.verify.outputs.version }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -33,11 +44,31 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
+      - name: Check this run is for the newest commit
+        run: bash scripts/release.sh guard
       # Dependency install scripts must not run alongside the publish token.
       - run: npm ci --ignore-scripts
-      - run: npx semantic-release
+      - id: release
+        run: npx semantic-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
           # Used only until npm trusted publishing is configured. Remove it then.
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Undo the release if npm did not get it
+        if: failure() && steps.release.outcome == 'failure'
+        run: bash scripts/release.sh rollback
+      - id: verify
+        name: Check every place shows the new version
+        run: bash scripts/release.sh verify
+
+  docs:
+    name: Docs site
+    needs: release
+    if: github.ref_name == 'master' && needs.release.outputs.version != ''
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
+    with:
+      ref: v${{ needs.release.outputs.version }}

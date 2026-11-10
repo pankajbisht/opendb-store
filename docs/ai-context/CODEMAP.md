@@ -55,7 +55,8 @@ The `browser` project runs contract, expiry, compat, query, migrate, indexeddb, 
 | `bench/` | Benchmarks; `npm run bench` |
 | `api/` | Committed public type declarations |
 | `docs/DIAGRAMS.md` | Mermaid flow diagrams |
-| `.github/workflows/` | `ci.yml` (reusable), `release.yml` (`master`, `next`), `codeql.yml` |
-| `.releaserc` | `master` and prerelease `next` |
+| `.github/workflows/` | `ci.yml` (reusable), `release.yml` (`master`, `next`, then `pages.yml`), `codeql.yml` |
+| `scripts/release.sh` | Release guard, rollback, and version check, called by `release.yml` |
+| `.releaserc` | `master` and prerelease `next`; release commit includes `src/version.ts` |
 | `scripts/serve.mjs` | Local demo server; only exposes `public/` and `dist/` |
 | `public/` | `examples/<name>/{index.html,main.js}`, `shared/`; import maps point at `dist/`. See `public/README.md` |

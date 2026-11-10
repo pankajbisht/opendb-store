@@ -97,6 +97,7 @@
     "format": "prettier --write .",
     "clean": "rm -rf dist",
     "module-package-json": "echo \"export const version = '${npm_package_version}';\" > src/version.ts",
+    "version": "npm run module-package-json",
     "bundle": "npm run module-package-json && npm run clean && rollup -c",
     "minify-esm": "terser dist/opendb-esm.js -o dist/opendb-esm.min.js --compress passes=2 --mangle --module --ecma 2020",
     "minify-umd": "terser dist/opendb-umd.js -o dist/opendb-umd.min.js --compress passes=2 --mangle --ecma 2020",
