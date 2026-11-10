@@ -1,3 +1,28 @@
+# [3.0.0-next.1](https://github.com/pankajbisht/opendb-store/compare/v2.0.1...v3.0.0-next.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* harden storage against leaks, injection, and tampered data ([9615988](https://github.com/pankajbisht/opendb-store/commit/96159882770be589554f64788736b968a707217b))
+
+
+### Features
+
+* add compression, validation, cache, React hook, and faster scans ([6f62060](https://github.com/pankajbisht/opendb-store/commit/6f62060db563feadd08e20307eb9ba0a871e1809))
+* add IndexedDB store with the same API as the other stores ([790418b](https://github.com/pankajbisht/opendb-store/commit/790418b03bcc71c639f08e81e64afc8deb59d45c))
+* rewrite for 3.0 with cookies, TypeScript, and SSR safety ([1cb91fb](https://github.com/pankajbisht/opendb-store/commit/1cb91fb9490ab6171979dfb303dee3d073aca595))
+
+
+### BREAKING CHANGES
+
+* clear(), keys(), and count are scoped to the namespace,
+has() is true for stored empty values, set() returns false instead of
+throwing, db.config is replaced by createStore, and trim() and the
+formatted data methods are removed. Stored data needs no migration.
+See docs/MIGRATION.md.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## 2.0.1 (2026-02-08)
 
 Published to npm directly, so no notes were generated at the time. See git history.
